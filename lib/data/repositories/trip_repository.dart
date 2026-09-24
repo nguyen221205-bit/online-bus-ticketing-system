@@ -1,17 +1,13 @@
-import '../../core/utils/json_loader.dart';
+import 'package:vexgo_app/core/utils/json_loader.dart';
 import '../models/city_model.dart';
-import '../models/flight_search_model.dart';
 import '../models/operator_model.dart';
 import '../models/popular_route_model.dart';
-import '../models/train_search_model.dart';
 import '../models/trip_model.dart';
 
 abstract class TripRepository {
   Future<List<CityModel>> getCities();
   Future<List<PopularRouteModel>> getPopularRoutes();
   Future<List<OperatorModel>> getOperators();
-  Future<List<AirportModel>> getAirports();
-  Future<List<TrainStationModel>> getTrainStations();
   Future<List<TripModel>> searchTrips({
     required String fromCityId,
     required String toCityId,
@@ -24,8 +20,6 @@ class MockTripRepository implements TripRepository {
   List<CityModel>? _cachedCities;
   List<PopularRouteModel>? _cachedRoutes;
   List<OperatorModel>? _cachedOperators;
-  List<AirportModel>? _cachedAirports;
-  List<TrainStationModel>? _cachedTrainStations;
   List<TripModel>? _cachedTrips;
 
   @override
@@ -53,24 +47,6 @@ class MockTripRepository implements TripRepository {
         await JsonLoader.loadJsonList('assets/mock_data/operators.json');
     _cachedOperators = rawList.map((item) => OperatorModel.fromJson(item)).toList();
     return _cachedOperators!;
-  }
-
-  @override
-  Future<List<AirportModel>> getAirports() async {
-    if (_cachedAirports != null) return _cachedAirports!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/airports.json');
-    _cachedAirports = rawList.map((item) => AirportModel.fromJson(item)).toList();
-    return _cachedAirports!;
-  }
-
-  @override
-  Future<List<TrainStationModel>> getTrainStations() async {
-    if (_cachedTrainStations != null) return _cachedTrainStations!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/train_stations.json');
-    _cachedTrainStations = rawList.map((item) => TrainStationModel.fromJson(item)).toList();
-    return _cachedTrainStations!;
   }
 
   @override

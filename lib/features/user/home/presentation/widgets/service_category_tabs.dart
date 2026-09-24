@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:vexgo_app/core/constants/app_colors.dart';
 import 'package:vexgo_app/core/constants/app_dimensions.dart';
 import 'package:vexgo_app/core/constants/app_text_styles.dart';
@@ -24,13 +25,19 @@ class ServiceCategoryTabs extends StatelessWidget {
               final isSelected = state.selectedService == service;
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: InkWell(
                     onTap: () {
-                      if (service == ServiceType.carRental) {
+                      if (service == ServiceType.ticketLookup) {
+                        context.push('/my-tickets');
+                        return;
+                      }
+                      if (service == ServiceType.cargo) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Dịch vụ Thuê xe tự lái / có tài xế sẽ sớm ra mắt!'),
+                            content: Text(
+                              'Dịch vụ Gửi hàng hóa theo xe khách liên tỉnh sẽ sớm ra mắt theo đề cương!',
+                            ),
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -94,7 +101,7 @@ class ServiceCategoryTabs extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'Mới',
+                                  'Sắp có',
                                   style: AppTextStyles.caption.copyWith(
                                     color: Colors.white,
                                     fontSize: 9,
