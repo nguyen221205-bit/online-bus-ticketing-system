@@ -357,6 +357,8 @@ class SearchFormCard extends StatelessWidget {
                                 style: AppTextStyles.titleSmall.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -369,7 +371,7 @@ class SearchFormCard extends StatelessWidget {
                             GestureDetector(
                               onTap: () => homeBloc.add(SelectDepartureDateEvent(today)),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: isToday ? AppColors.primary : Colors.white,
                                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
@@ -382,6 +384,7 @@ class SearchFormCard extends StatelessWidget {
                                   style: AppTextStyles.caption.copyWith(
                                     color: isToday ? Colors.white : AppColors.neutral700,
                                     fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                                    fontSize: 11,
                                   ),
                                 ),
                               ),
@@ -390,7 +393,7 @@ class SearchFormCard extends StatelessWidget {
                             GestureDetector(
                               onTap: () => homeBloc.add(SelectDepartureDateEvent(tomorrow)),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: isTomorrow ? AppColors.primary : Colors.white,
                                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
@@ -403,6 +406,7 @@ class SearchFormCard extends StatelessWidget {
                                   style: AppTextStyles.caption.copyWith(
                                     color: isTomorrow ? Colors.white : AppColors.neutral700,
                                     fontWeight: isTomorrow ? FontWeight.w700 : FontWeight.w500,
+                                    fontSize: 11,
                                   ),
                                 ),
                               ),
@@ -463,6 +467,8 @@ class SearchFormCard extends StatelessWidget {
                                   style: AppTextStyles.titleSmall.copyWith(
                                     fontWeight: FontWeight.w700,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -780,7 +786,13 @@ class SearchFormCard extends StatelessWidget {
                             children: const [
                               Icon(Icons.flight_rounded, color: AppColors.primary),
                               SizedBox(width: 8),
-                              Text('Tìm Vé Máy Bay'),
+                              Expanded(
+                                child: Text(
+                                  'Tìm Vé Máy Bay',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                           content: Text(
@@ -806,7 +818,13 @@ class SearchFormCard extends StatelessWidget {
                             children: const [
                               Icon(Icons.train_rounded, color: AppColors.primary),
                               SizedBox(width: 8),
-                              Text('Tìm Vé Tàu Hỏa'),
+                              Expanded(
+                                child: Text(
+                                  'Tìm Vé Tàu Hỏa',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                           content: Text(

@@ -18,6 +18,7 @@ class CustomTextField extends StatelessWidget {
   final bool enabled;
   final int maxLines;
   final FocusNode? focusNode;
+  final TextAlign textAlign;
 
   const CustomTextField({
     super.key,
@@ -35,6 +36,7 @@ class CustomTextField extends StatelessWidget {
     this.enabled = true,
     this.maxLines = 1,
     this.focusNode,
+    this.textAlign = TextAlign.start,
   });
 
   @override
@@ -57,6 +59,7 @@ class CustomTextField extends StatelessWidget {
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          textAlign: textAlign,
           validator: validator,
           onChanged: onChanged,
           onTap: onTap,

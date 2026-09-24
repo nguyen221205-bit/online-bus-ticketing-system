@@ -76,11 +76,15 @@ class FeaturedOperatorsSection extends StatelessWidget {
                   const Icon(Icons.phone_in_talk_rounded, color: AppColors.secondary, size: 20),
                   const SizedBox(width: AppDimensions.sm),
                   Text('Hotline: ', style: AppTextStyles.bodyMedium),
-                  Text(
-                    op.hotline,
-                    style: AppTextStyles.titleSmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      op.hotline,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -124,9 +128,13 @@ class FeaturedOperatorsSection extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Nhà xe uy tín đối tác',
-                    style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w700),
+                  Expanded(
+                    child: Text(
+                      'Nhà xe uy tín đối tác',
+                      style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   TextButton(
                     onPressed: () {},
