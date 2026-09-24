@@ -30,9 +30,13 @@ class PopularRoutesSection extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Tuyến đường phổ biến',
-                    style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w700),
+                  Expanded(
+                    child: Text(
+                      'Tuyến đường phổ biến',
+                      style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   TextButton(
                     onPressed: () {},
@@ -49,7 +53,7 @@ class PopularRoutesSection extends StatelessWidget {
             ),
             const SizedBox(height: AppDimensions.xs),
             SizedBox(
-              height: 215,
+              height: 220,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: AppDimensions.base),
@@ -198,11 +202,15 @@ class _PopularRouteCard extends StatelessWidget {
                         'Từ ',
                         style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
                       ),
-                      Text(
-                        CurrencyFormatter.format(route.minPrice),
-                        style: AppTextStyles.price.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: Text(
+                          CurrencyFormatter.format(route.minPrice),
+                          style: AppTextStyles.price.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
