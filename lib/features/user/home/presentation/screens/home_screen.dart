@@ -159,7 +159,7 @@ class _HomeScreenContent extends StatelessWidget {
 
                           // Slogan & Guarantee
                           Text(
-                            'Hệ thống đặt vé trực tuyến',
+                            'Đặt vé xe khách trực tuyến',
                             style: AppTextStyles.h2.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
@@ -167,7 +167,7 @@ class _HomeScreenContent extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Cam kết giữ chỗ 100% • Hàng triệu khách hàng tin dùng',
+                            'Cam kết giữ chỗ 100% • Hàng triệu hành khách tin dùng',
                             style: AppTextStyles.bodySmall.copyWith(
                               color: Colors.white.withValues(alpha: 0.9),
                             ),
@@ -175,7 +175,7 @@ class _HomeScreenContent extends StatelessWidget {
 
                           const SizedBox(height: AppDimensions.md),
 
-                          // 4 Service Category Tabs (Xe khách, Máy bay, Tàu hỏa, Thuê xe)
+                          // Dịch vụ hệ sinh thái xe khách (Vé xe khách, Gửi hàng hóa, Tra cứu vé)
                           const ServiceCategoryTabs(),
                         ],
                       ),

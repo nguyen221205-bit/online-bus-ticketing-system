@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../data/models/service_type.dart';
 import '../../../../data/repositories/trip_repository.dart';
 import 'home_event.dart';
 import 'home_state.dart';
@@ -14,13 +13,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<SwapCitiesEvent>(_onSwapCities);
     on<SelectDepartureCityEvent>(_onSelectDepartureCity);
     on<SelectDestinationCityEvent>(_onSelectDestinationCity);
-    on<SelectDepartureAirportEvent>(_onSelectDepartureAirport);
-    on<SelectDestinationAirportEvent>(_onSelectDestinationAirport);
-    on<SelectFlightSeatClassEvent>(_onSelectFlightSeatClass);
-    on<UpdateFlightPassengersEvent>(_onUpdateFlightPassengers);
-    on<SelectDepartureTrainStationEvent>(_onSelectDepartureTrainStation);
-    on<SelectDestinationTrainStationEvent>(_onSelectDestinationTrainStation);
-    on<UpdateTrainPassengersEvent>(_onUpdateTrainPassengers);
     on<SelectDepartureDateEvent>(_onSelectDepartureDate);
     on<SelectReturnDateEvent>(_onSelectReturnDate);
     on<ToggleRoundTripEvent>(_onToggleRoundTrip);
@@ -36,8 +28,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final cities = await tripRepository.getCities();
       final popularRoutes = await tripRepository.getPopularRoutes();
       final operators = await tripRepository.getOperators();
-      final airports = await tripRepository.getAirports();
-      final trainStations = await tripRepository.getTrainStations();
 
       final defaultDepartureCity = cities.firstWhere(
         (c) => c.id == 'HCM',
@@ -49,39 +39,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         orElse: () => cities.length > 1 ? cities[1] : cities.first,
       );
 
-      final defaultDepartureAirport = airports.firstWhere(
-        (a) => a.id == 'SGN',
-        orElse: () => airports.isNotEmpty ? airports.first : airports.first,
-      );
-
-      final defaultDestinationAirport = airports.firstWhere(
-        (a) => a.id == 'HAN',
-        orElse: () => airports.length > 1 ? airports[1] : airports.first,
-      );
-
-      final defaultDepartureTrainStation = trainStations.firstWhere(
-        (t) => t.id == 'GA_SGN',
-        orElse: () => trainStations.isNotEmpty ? trainStations.first : trainStations.first,
-      );
-
-      final defaultDestinationTrainStation = trainStations.firstWhere(
-        (t) => t.id == 'GA_NT',
-        orElse: () => trainStations.length > 1 ? trainStations[1] : trainStations.first,
-      );
-
       emit(state.copyWith(
         status: HomeStatus.success,
         cities: cities,
         popularRoutes: popularRoutes,
         operators: operators,
-        airports: airports,
-        trainStations: trainStations,
         departureCity: defaultDepartureCity,
         destinationCity: defaultDestinationCity,
-        departureAirport: defaultDepartureAirport,
-        destinationAirport: defaultDestinationAirport,
-        departureTrainStation: defaultDepartureTrainStation,
-        destinationTrainStation: defaultDestinationTrainStation,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -102,31 +66,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     SwapCitiesEvent event,
     Emitter<HomeState> emit,
   ) {
-    switch (state.selectedService) {
-      case ServiceType.bus:
-        final temp = state.departureCity;
-        emit(state.copyWith(
-          departureCity: state.destinationCity,
-          destinationCity: temp,
-        ));
-        break;
-      case ServiceType.flight:
-        final temp = state.departureAirport;
-        emit(state.copyWith(
-          departureAirport: state.destinationAirport,
-          destinationAirport: temp,
-        ));
-        break;
-      case ServiceType.train:
-        final temp = state.departureTrainStation;
-        emit(state.copyWith(
-          departureTrainStation: state.destinationTrainStation,
-          destinationTrainStation: temp,
-        ));
-        break;
-      case ServiceType.carRental:
-        break;
-    }
+    final temp = state.departureCity;
+    emit(state.copyWith(
+      departureCity: state.destinationCity,
+      destinationCity: temp,
+    ));
   }
 
   void _onSelectDepartureCity(
@@ -141,55 +85,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) {
     emit(state.copyWith(destinationCity: event.city));
-  }
-
-  void _onSelectDepartureAirport(
-    SelectDepartureAirportEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(departureAirport: event.airport));
-  }
-
-  void _onSelectDestinationAirport(
-    SelectDestinationAirportEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(destinationAirport: event.airport));
-  }
-
-  void _onSelectFlightSeatClass(
-    SelectFlightSeatClassEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(flightSeatClass: event.seatClass));
-  }
-
-  void _onUpdateFlightPassengers(
-    UpdateFlightPassengersEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(flightPassengers: event.passengers));
-  }
-
-  void _onSelectDepartureTrainStation(
-    SelectDepartureTrainStationEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(departureTrainStation: event.station));
-  }
-
-  void _onSelectDestinationTrainStation(
-    SelectDestinationTrainStationEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(destinationTrainStation: event.station));
-  }
-
-  void _onUpdateTrainPassengers(
-    UpdateTrainPassengersEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(trainPassengers: event.passengers));
   }
 
   void _onSelectDepartureDate(
