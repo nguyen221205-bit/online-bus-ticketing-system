@@ -1,0 +1,29 @@
+[
+  {
+    "id": "NOTIF_01",
+    "type": "TRIP_REMINDER",
+    "title": "Nhắc nhở khởi hành chuyến đi Đà Lạt",
+    "message": "Chuyến xe đi Đà Lạt của bạn (Phương Trang - 51B-289.45) sẽ xuất phát vào lúc 23:00 hôm nay. Vui lòng có mặt trước 30 phút tại Bến xe Miền Đông mới.",
+    "createdAt": "25/09/2026 19:00",
+    "isRead": false,
+    "ticketId": "TKT_984210"
+  },
+  {
+    "id": "NOTIF_02",
+    "type": "PROMOTION",
+    "title": "Ưu đãi chào thu: Giảm ngay 50.000đ",
+    "message": "Nhập mã VEXGO50K khi đặt vé bất kỳ trong tuần này để nhận ngay ưu đãi giảm trực tiếp 50.000đ.",
+    "createdAt": "22/09/2026 08:30",
+    "isRead": false,
+    "promoCode": "VEXGO50K"
+  },
+  {
+    "id": "NOTIF_03",
+    "type": "BOOKING_SUCCESS",
+    "title": "Đặt vé thành công mã #VXG-984210",
+    "message": "Giao dịch thanh toán 530.000đ qua Ví MoMo đã thành công. Bấm để xem vé xe điện tử của bạn.",
+    "createdAt": "20/09/2026 14:31",
+    "isRead": true,
+    "ticketId": "TKT_984210"
+  }
+]
