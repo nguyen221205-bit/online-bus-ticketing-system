@@ -109,9 +109,13 @@ class _TripFilterSheetState extends State<TripFilterSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Bộ lọc tìm kiếm',
-                  style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Text(
+                    'Bộ lọc tìm kiếm',
+                    style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 TextButton(
                   onPressed: _reset,
@@ -181,19 +185,29 @@ class _TripFilterSheetState extends State<TripFilterSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'KHOẢNG GIÁ',
-                      style: AppTextStyles.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.neutral500,
-                        letterSpacing: 0.5,
+                    Flexible(
+                      child: Text(
+                        'KHOẢNG GIÁ',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.neutral500,
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      '${CurrencyFormatter.format(_priceRange.start.round())} - ${CurrencyFormatter.format(_priceRange.end.round())}',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(width: AppDimensions.sm),
+                    Flexible(
+                      child: Text(
+                        '${CurrencyFormatter.format(_priceRange.start.round())} - ${CurrencyFormatter.format(_priceRange.end.round())}',
+                        style: AppTextStyles.titleSmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
                       ),
                     ),
                   ],

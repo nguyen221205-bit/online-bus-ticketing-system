@@ -47,6 +47,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               color: titleColor,
               fontWeight: FontWeight.w700,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 2),
@@ -56,6 +58,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 color: titleColor.withValues(alpha: 0.8),
                 fontSize: 12,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],

@@ -243,13 +243,17 @@ class TripCard extends StatelessWidget {
                                   trip: trip,
                                   onSelectTrip: onSelect,
                                 ),
-                                child: Text(
-                                  'Chi tiết',
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w700,
-                                    decoration: TextDecoration.underline,
-                                    fontSize: 11,
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  child: Text(
+                                    'Chi tiết',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                      decoration: TextDecoration.underline,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                               ),
