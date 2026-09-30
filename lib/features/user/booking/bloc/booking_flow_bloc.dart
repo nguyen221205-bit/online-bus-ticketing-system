@@ -47,7 +47,25 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     ));
 
     try {
-      final seatLayout = await seatRepository.getSeatLayout(event.trip.seatLayoutType);
+      final tripId = event.trip.numericTripId ?? int.tryParse(event.trip.id);
+      SeatLayoutModel seatLayout;
+      if (tripId != null && tripId > 0) {
+        final realSeats = await seatRepository.getTripSeats(tripId);
+        if (realSeats.isNotEmpty) {
+          final lower = realSeats.where((s) => s.floor == 1).toList();
+          final upper = realSeats.where((s) => s.floor == 2).toList();
+          seatLayout = SeatLayoutModel(
+            vehicleType: event.trip.vehicleType,
+            hasTwoFloors: upper.isNotEmpty,
+            lowerFloor: lower,
+            upperFloor: upper,
+          );
+        } else {
+          seatLayout = await seatRepository.getSeatLayout(event.trip.seatLayoutType);
+        }
+      } else {
+        seatLayout = await seatRepository.getSeatLayout(event.trip.seatLayoutType);
+      }
       final vouchers = await bookingRepository.getVouchers();
 
       final pickups = event.trip.pickupPoints;
@@ -231,8 +249,22 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
           errorMessage: e.message,
         ));
         if (state.trip != null) {
-          final refreshed = await seatRepository.getSeatLayout(state.trip!.seatLayoutType);
-          emit(state.copyWith(seatLayout: refreshed));
+          final tripId = state.trip!.numericTripId ?? int.tryParse(state.trip!.id);
+          if (tripId != null && tripId > 0) {
+            final realSeats = await seatRepository.getTripSeats(tripId);
+            if (realSeats.isNotEmpty) {
+              final lower = realSeats.where((s) => s.floor == 1).toList();
+              final upper = realSeats.where((s) => s.floor == 2).toList();
+              emit(state.copyWith(
+                seatLayout: SeatLayoutModel(
+                  vehicleType: state.trip!.vehicleType,
+                  hasTwoFloors: upper.isNotEmpty,
+                  lowerFloor: lower,
+                  upperFloor: upper,
+                ),
+              ));
+            }
+          }
         }
         return;
       } catch (e) {

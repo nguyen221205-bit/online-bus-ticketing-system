@@ -304,8 +304,58 @@ class HybridBookingRepository implements BookingRepository {
     required int finalAmount,
     required String paymentMethod,
     required PassengerInfo passenger,
-  }) =>
-      mockFallback.createBooking(
+  }) async {
+    try {
+      final tripId = int.tryParse(trip.id) ?? 1;
+      final seatIds = seats.map((s) => int.tryParse(s) ?? 0).toList();
+
+      final booking = await remoteBookingDataSource.createBooking(
+        tripId: tripId,
+        seatIds: seatIds,
+        pickupPoint: trip.pickupPoint,
+        dropoffPoint: trip.dropoffPoint,
+        contact: passenger,
+      );
+
+      // Create payment transaction in MySQL
+      try {
+        final payment = await remotePaymentDataSource.createPayment(
+          bookingId: booking.bookingId,
+          provider: paymentMethod.toUpperCase(),
+        );
+        await remotePaymentDataSource.getPaymentStatus(payment.paymentId);
+      } catch (pe) {
+        if (kDebugMode) {
+          debugPrint('[HybridBookingRepository] Payment call warning: $pe');
+        }
+      }
+
+      final now = DateTime.now();
+      final bookingDateStr =
+          '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+      final newTicket = TicketModel(
+        id: 'TKT_${booking.bookingCode}',
+        ticketCode: booking.bookingCode,
+        status: TicketStatus.upcoming,
+        bookingDate: bookingDateStr,
+        trip: trip,
+        seats: booking.seats.isNotEmpty ? booking.seats : seats,
+        totalAmount: totalAmount,
+        discountAmount: discountAmount,
+        finalAmount: finalAmount,
+        paymentMethod: paymentMethod,
+        passenger: passenger,
+        licensePlate: '51B-${200 + booking.bookingId}.99',
+        driverPhone: '0909 888 777',
+      );
+
+      return newTicket;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridBookingRepository] Remote booking failed, falling back to mock: $e');
+      }
+      return mockFallback.createBooking(
         trip: trip,
         seats: seats,
         totalAmount: totalAmount,
@@ -314,6 +364,8 @@ class HybridBookingRepository implements BookingRepository {
         paymentMethod: paymentMethod,
         passenger: passenger,
       );
+    }
+  }
 
   @override
   Future<BookingQuoteModel> getBookingQuote({
