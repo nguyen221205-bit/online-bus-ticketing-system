@@ -22,13 +22,13 @@ class VexGoApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<TripRepository>(
-          create: (context) => MockTripRepository(),
+          create: (context) => HybridTripRepository(),
         ),
         RepositoryProvider<SeatRepository>(
-          create: (context) => MockSeatRepository(),
+          create: (context) => HybridSeatRepository(),
         ),
         RepositoryProvider<BookingRepository>(
-          create: (context) => MockBookingRepository(),
+          create: (context) => HybridBookingRepository(),
         ),
         RepositoryProvider<AuthRepository>(
           create: (context) => MockAuthRepository(),
