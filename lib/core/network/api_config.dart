@@ -7,17 +7,30 @@ class ApiConfig {
   /// Default local development port for NestJS backend (apps/api) per rule-api.md
   static const int defaultPort = 4000;
 
+  /// Optional compile-time environment override:
+  /// flutter run --dart-define=API_BASE_URL=http://localhost:4000/api/v1
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  /// When running on physical Android device with `adb reverse tcp:4000 tcp:4000`,
+  /// setting this to true connects to 127.0.0.1 (phone's loopback forwarded to PC).
+  static bool useRealDevice = true;
+
   /// Default Base URL logic:
-  /// - Web / macOS / Windows / Linux: http://localhost:3000/api/v1
-  /// - Android Emulator: http://10.0.2.2:3000/api/v1
-  /// - Physical device (LAN): http://YOUR_LAN_IP:3000/api/v1
+  /// - Web / macOS / Windows / Linux: http://localhost:4000/api/v1
+  /// - Android (Physical with ADB Reverse): http://127.0.0.1:4000/api/v1
+  /// - Android (Emulator without ADB): http://10.0.2.2:4000/api/v1
   static String get defaultBaseUrl {
+    if (_envBaseUrl.isNotEmpty) {
+      return _envBaseUrl;
+    }
     if (kIsWeb) {
       return 'http://localhost:$defaultPort/api/v1';
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://10.0.2.2:$defaultPort/api/v1';
+        return useRealDevice
+            ? 'http://127.0.0.1:$defaultPort/api/v1'
+            : 'http://10.0.2.2:$defaultPort/api/v1';
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
