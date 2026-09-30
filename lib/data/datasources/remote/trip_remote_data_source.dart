@@ -33,10 +33,7 @@ class TripRemoteDataSourceImpl implements TripRemoteDataSource {
     String? sortBy,
     String? sortDirection,
   }) async {
-    final query = <String, dynamic>{
-      'page': page,
-      'pageSize': pageSize,
-    };
+    final query = <String, dynamic>{'page': page, 'pageSize': pageSize};
     if (from != null && from.isNotEmpty) query['from'] = from;
     if (to != null && to.isNotEmpty) query['to'] = to;
     if (departureDate != null && departureDate.isNotEmpty) {
@@ -49,7 +46,9 @@ class TripRemoteDataSourceImpl implements TripRemoteDataSource {
     final res = await client.get(ApiConfig.tripsSearch, queryParams: query);
     if (res is Map<String, dynamic> && res['data'] is List) {
       final list = res['data'] as List;
-      return list.map((item) => TripModel.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => TripModel.fromJson(item as Map<String, dynamic>))
+          .toList();
     }
     return [];
   }

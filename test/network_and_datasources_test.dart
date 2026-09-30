@@ -36,13 +36,19 @@ void main() {
         expect(ApiConfig.baseUrl, equals('http://192.168.1.100:3000/api/v1'));
 
         ApiConfig.resetBaseUrl();
-        expect(ApiConfig.baseUrl, isNot(equals('http://192.168.1.100:3000/api/v1')));
+        expect(
+          ApiConfig.baseUrl,
+          isNot(equals('http://192.168.1.100:3000/api/v1')),
+        );
       });
 
       test('ApiConfig paths generation', () {
         expect(ApiConfig.tripDetail(101), equals('/trips/101'));
         expect(ApiConfig.tripSeats(101), equals('/trips/101/seats'));
-        expect(ApiConfig.seatHoldRelease('token_123'), equals('/seat-holds/token_123'));
+        expect(
+          ApiConfig.seatHoldRelease('token_123'),
+          equals('/seat-holds/token_123'),
+        );
         expect(ApiConfig.bookingDetail(202), equals('/bookings/202'));
         expect(ApiConfig.paymentStatus(303), equals('/payments/303/status'));
       });
@@ -76,10 +82,15 @@ void main() {
         await TokenStorage.saveTokens(accessToken: 'valid_bearer_token');
 
         final mockClient = MockClient((request) async {
-          expect(request.headers['Authorization'], equals('Bearer valid_bearer_token'));
+          expect(
+            request.headers['Authorization'],
+            equals('Bearer valid_bearer_token'),
+          );
           expect(request.headers['Accept'], equals('application/json'));
           return http.Response(
-            jsonEncode({'data': {'message': 'success'}}),
+            jsonEncode({
+              'data': {'message': 'success'},
+            }),
             200,
             headers: {'content-type': 'application/json; charset=utf-8'},
           );
@@ -95,7 +106,9 @@ void main() {
           final bodyMap = jsonDecode(request.body) as Map<String, dynamic>;
           expect(bodyMap['tripId'], equals(123));
           return http.Response(
-            jsonEncode({'data': {'holdToken': 'token_abc'}}),
+            jsonEncode({
+              'data': {'holdToken': 'token_abc'},
+            }),
             201,
             headers: {'content-type': 'application/json'},
           );
@@ -109,7 +122,11 @@ void main() {
       test('401 response throws UnauthorizedException', () async {
         final mockClient = MockClient((request) async {
           return http.Response(
-            jsonEncode({'statusCode': 401, 'error': 'UNAUTHORIZED', 'message': 'Token hết hạn'}),
+            jsonEncode({
+              'statusCode': 401,
+              'error': 'UNAUTHORIZED',
+              'message': 'Token hết hạn',
+            }),
             401,
             headers: {'content-type': 'application/json'},
           );
@@ -122,29 +139,37 @@ void main() {
         );
       });
 
-      test('409 SEAT_UNAVAILABLE response throws ApiException with details', () async {
-        final mockClient = MockClient((request) async {
-          return http.Response(
-            jsonEncode({
-              'statusCode': 409,
-              'error': 'SEAT_UNAVAILABLE',
-              'message': 'Ghế đã được đặt bởi khách khác.',
-            }),
-            409,
-            headers: {'content-type': 'application/json'},
-          );
-        });
+      test(
+        '409 SEAT_UNAVAILABLE response throws ApiException with details',
+        () async {
+          final mockClient = MockClient((request) async {
+            return http.Response(
+              jsonEncode({
+                'statusCode': 409,
+                'error': 'SEAT_UNAVAILABLE',
+                'message': 'Ghế đã được đặt bởi khách khác.',
+              }),
+              409,
+              headers: {'content-type': 'application/json'},
+            );
+          });
 
-        final apiClient = ApiClient(httpClient: mockClient);
-        try {
-          await apiClient.post('/seat-holds', body: {'seatIds': [10]});
-          fail('Should throw ApiException');
-        } on ApiException catch (e) {
-          expect(e.statusCode, equals(409));
-          expect(e.errorCode, equals('SEAT_UNAVAILABLE'));
-          expect(e.message, contains('Ghế đã được đặt'));
-        }
-      });
+          final apiClient = ApiClient(httpClient: mockClient);
+          try {
+            await apiClient.post(
+              '/seat-holds',
+              body: {
+                'seatIds': [10],
+              },
+            );
+            fail('Should throw ApiException');
+          } on ApiException catch (e) {
+            expect(e.statusCode, equals(409));
+            expect(e.errorCode, equals('SEAT_UNAVAILABLE'));
+            expect(e.message, contains('Ghế đã được đặt'));
+          }
+        },
+      );
     });
 
     // -------------------------------------------------------------------------
@@ -166,15 +191,17 @@ void main() {
                   'price': 280000,
                   'availableSeats': 10,
                   'totalSeats': 34,
-                }
-              ]
+                },
+              ],
             }),
             200,
             headers: {'content-type': 'application/json'},
           );
         });
 
-        final ds = TripRemoteDataSourceImpl(client: ApiClient(httpClient: mockClient));
+        final ds = TripRemoteDataSourceImpl(
+          client: ApiClient(httpClient: mockClient),
+        );
         final trips = await ds.searchTrips(from: 'SGN', to: 'DLT');
         expect(trips.length, equals(1));
         expect(trips.first.id, equals('101'));
@@ -191,18 +218,25 @@ void main() {
                   'tripId': 101,
                   'seatIds': [10, 11],
                   'expiresAt': '2026-10-01T12:00:00.000Z',
-                }
+                },
               }),
               201,
               headers: {'content-type': 'application/json'},
             );
           } else {
             // DELETE
-            return http.Response(jsonEncode({'data': {'success': true}}), 200);
+            return http.Response(
+              jsonEncode({
+                'data': {'success': true},
+              }),
+              200,
+            );
           }
         });
 
-        final ds = SeatRemoteDataSourceImpl(client: ApiClient(httpClient: mockClient));
+        final ds = SeatRemoteDataSourceImpl(
+          client: ApiClient(httpClient: mockClient),
+        );
         final hold = await ds.createSeatHold(tripId: 101, seatIds: [10, 11]);
         expect(hold.holdToken, equals('hold_uuid_test'));
         expect(hold.seatIds, equals([10, 11]));
@@ -224,7 +258,7 @@ void main() {
                   'finalTotal': 450000,
                   'currency': 'VND',
                   'appliedPromotionCode': 'SUMMER26',
-                }
+                },
               }),
               200,
               headers: {'content-type': 'application/json'},
@@ -236,7 +270,7 @@ void main() {
                   'code': 'SUMMER26',
                   'isValid': true,
                   'discountAmount': 50000,
-                }
+                },
               }),
               200,
               headers: {'content-type': 'application/json'},
@@ -260,7 +294,7 @@ void main() {
                   'seats': ['A01', 'A02'],
                   'seatIds': [10, 11],
                   'totalAmount': 450000,
-                }
+                },
               }),
               201,
               headers: {'content-type': 'application/json'},
@@ -268,11 +302,22 @@ void main() {
           }
         });
 
-        final ds = BookingRemoteDataSourceImpl(client: ApiClient(httpClient: mockClient));
-        final quote = await ds.getBookingQuote(tripId: 101, seatIds: [10, 11], promotionCode: 'SUMMER26');
+        final ds = BookingRemoteDataSourceImpl(
+          client: ApiClient(httpClient: mockClient),
+        );
+        final quote = await ds.getBookingQuote(
+          tripId: 101,
+          seatIds: [10, 11],
+          promotionCode: 'SUMMER26',
+        );
         expect(quote.finalTotal, equals(450000));
 
-        final promo = await ds.validatePromotion(code: 'SUMMER26', tripId: 101, seatCount: 2, totalAmount: 500000);
+        final promo = await ds.validatePromotion(
+          code: 'SUMMER26',
+          tripId: 101,
+          seatCount: 2,
+          totalAmount: 500000,
+        );
         expect(promo.isValid, isTrue);
 
         final booking = await ds.createBooking(
@@ -280,78 +325,98 @@ void main() {
           seatIds: [10, 11],
           pickupPoint: 'Bến xe Miền Đông',
           dropoffPoint: 'Bến xe Đà Lạt',
-          contact: const PassengerInfo(fullName: 'Nguyễn Văn An', phone: '0901234567', email: 'an@test.com'),
+          contact: const PassengerInfo(
+            fullName: 'Nguyễn Văn An',
+            phone: '0901234567',
+            email: 'an@test.com',
+          ),
         );
         expect(booking.bookingId, equals(999));
         expect(booking.isPending, isTrue);
       });
 
-      test('PaymentRemoteDataSourceImpl creates payment and checks status', () async {
-        final mockClient = MockClient((request) async {
-          if (request.method == 'POST') {
-            return http.Response(
-              jsonEncode({
-                'data': {
-                  'paymentId': 555,
-                  'bookingId': 999,
-                  'provider': 'MOMO',
-                  'amount': 450000,
-                  'paymentUrl': 'https://pay.momo.vn/pay?id=555',
-                  'deeplink': 'momo://app?id=555',
-                  'status': 'PENDING',
-                }
-              }),
-              201,
-              headers: {'content-type': 'application/json'},
-            );
-          } else {
-            return http.Response(
-              jsonEncode({
-                'data': {
-                  'paymentId': 555,
-                  'bookingId': 999,
-                  'provider': 'MOMO',
-                  'amount': 450000,
-                  'status': 'SUCCESS',
-                  'paidAt': '2026-10-01T12:05:00.000Z',
-                }
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-            );
-          }
-        });
+      test(
+        'PaymentRemoteDataSourceImpl creates payment and checks status',
+        () async {
+          final mockClient = MockClient((request) async {
+            if (request.method == 'POST') {
+              return http.Response(
+                jsonEncode({
+                  'data': {
+                    'paymentId': 555,
+                    'bookingId': 999,
+                    'provider': 'MOMO',
+                    'amount': 450000,
+                    'paymentUrl': 'https://pay.momo.vn/pay?id=555',
+                    'deeplink': 'momo://app?id=555',
+                    'status': 'PENDING',
+                  },
+                }),
+                201,
+                headers: {'content-type': 'application/json'},
+              );
+            } else {
+              return http.Response(
+                jsonEncode({
+                  'data': {
+                    'paymentId': 555,
+                    'bookingId': 999,
+                    'provider': 'MOMO',
+                    'amount': 450000,
+                    'status': 'SUCCESS',
+                    'paidAt': '2026-10-01T12:05:00.000Z',
+                  },
+                }),
+                200,
+                headers: {'content-type': 'application/json'},
+              );
+            }
+          });
 
-        final ds = PaymentRemoteDataSourceImpl(client: ApiClient(httpClient: mockClient));
-        final payment = await ds.createPayment(bookingId: 999, provider: 'MOMO');
-        expect(payment.paymentId, equals(555));
-        expect(payment.provider, equals(PaymentProvider.momo));
-        expect(payment.status, equals(PaymentStatus.pending));
+          final ds = PaymentRemoteDataSourceImpl(
+            client: ApiClient(httpClient: mockClient),
+          );
+          final payment = await ds.createPayment(
+            bookingId: 999,
+            provider: 'MOMO',
+          );
+          expect(payment.paymentId, equals(555));
+          expect(payment.provider, equals(PaymentProvider.momo));
+          expect(payment.status, equals(PaymentStatus.pending));
 
-        final status = await ds.getPaymentStatus(555);
-        expect(status.status, equals(PaymentStatus.success));
-        expect(status.isSuccess, isTrue);
-      });
+          final status = await ds.getPaymentStatus(555);
+          expect(status.status, equals(PaymentStatus.success));
+          expect(status.isSuccess, isTrue);
+        },
+      );
     });
 
     // -------------------------------------------------------------------------
     // 4. Hybrid Repositories Fallback Mechanism
     // -------------------------------------------------------------------------
     group('Hybrid Repositories Fallback', () {
-      test('HybridTripRepository falls back to Mock on NetworkException', () async {
-        // MockClient throwing NetworkException by returning 500 or failing
-        final failingClient = MockClient((request) async {
-          throw http.ClientException('Connection refused');
-        });
+      test(
+        'HybridTripRepository falls back to Mock on NetworkException',
+        () async {
+          // MockClient throwing NetworkException by returning 500 or failing
+          final failingClient = MockClient((request) async {
+            throw http.ClientException('Connection refused');
+          });
 
-        final hybridRepo = HybridTripRepository(
-          remoteDataSource: TripRemoteDataSourceImpl(client: ApiClient(httpClient: failingClient)),
-          mockFallback: MockTripRepository(),
-        );
+          final hybridRepo = HybridTripRepository(
+            remoteDataSource: TripRemoteDataSourceImpl(
+              client: ApiClient(httpClient: failingClient),
+            ),
+            mockFallback: MockTripRepository(),
+          );
 
-        final trips = await hybridRepo.searchTrips(fromCityId: 'SGN', toCityId: 'DLT');
-        expect(trips, isNotEmpty);
-      });
+          final trips = await hybridRepo.searchTrips(
+            fromCityId: 'SGN',
+            toCityId: 'DLT',
+          );
+          expect(trips, isNotEmpty);
+        },
+      );
 
       test('HybridSeatRepository falls back to Mock on error', () async {
         final failingClient = MockClient((request) async {
@@ -359,11 +424,16 @@ void main() {
         });
 
         final hybridRepo = HybridSeatRepository(
-          remoteDataSource: SeatRemoteDataSourceImpl(client: ApiClient(httpClient: failingClient)),
+          remoteDataSource: SeatRemoteDataSourceImpl(
+            client: ApiClient(httpClient: failingClient),
+          ),
           mockFallback: MockSeatRepository(),
         );
 
-        final hold = await hybridRepo.createSeatHold(tripId: 101, seatIds: [10, 11]);
+        final hold = await hybridRepo.createSeatHold(
+          tripId: 101,
+          seatIds: [10, 11],
+        );
         expect(hold.holdToken, contains('mock-hold'));
         expect(hold.seatIds, equals([10, 11]));
       });
@@ -374,15 +444,27 @@ void main() {
         });
 
         final hybridRepo = HybridBookingRepository(
-          remoteBookingDataSource: BookingRemoteDataSourceImpl(client: ApiClient(httpClient: failingClient)),
-          remotePaymentDataSource: PaymentRemoteDataSourceImpl(client: ApiClient(httpClient: failingClient)),
+          remoteBookingDataSource: BookingRemoteDataSourceImpl(
+            client: ApiClient(httpClient: failingClient),
+          ),
+          remotePaymentDataSource: PaymentRemoteDataSourceImpl(
+            client: ApiClient(httpClient: failingClient),
+          ),
           mockFallback: MockBookingRepository(),
         );
 
-        final quote = await hybridRepo.getBookingQuote(tripId: 101, seatIds: [10, 11]);
+        final quote = await hybridRepo.getBookingQuote(
+          tripId: 101,
+          seatIds: [10, 11],
+        );
         expect(quote.finalTotal, greaterThan(0));
 
-        final promo = await hybridRepo.validatePromotion(code: 'VEXGO50', tripId: 101, seatCount: 2, totalAmount: 500000);
+        final promo = await hybridRepo.validatePromotion(
+          code: 'VEXGO50',
+          tripId: 101,
+          seatCount: 2,
+          totalAmount: 500000,
+        );
         expect(promo.isValid, isTrue);
 
         final booking = await hybridRepo.createApiBooking(
@@ -390,7 +472,11 @@ void main() {
           seatIds: [10, 11],
           pickupPoint: 'Bến xe',
           dropoffPoint: 'Bến xe',
-          contact: const PassengerInfo(fullName: 'An', phone: '0901', email: 'an@test.com'),
+          contact: const PassengerInfo(
+            fullName: 'An',
+            phone: '0901',
+            email: 'an@test.com',
+          ),
         );
         expect(booking.bookingId, greaterThan(0));
         expect(booking.isPending, isTrue);

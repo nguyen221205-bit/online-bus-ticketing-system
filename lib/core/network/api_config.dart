@@ -87,7 +87,8 @@ class ApiConfig {
   static const String bookingQuote = '/bookings/quote';
   static const String bookings = '/bookings';
   static String bookingDetail(dynamic bookingId) => '/bookings/$bookingId';
-  static String bookingCancel(dynamic bookingId) => '/bookings/$bookingId/cancel';
+  static String bookingCancel(dynamic bookingId) =>
+      '/bookings/$bookingId/cancel';
 
   // Promotions (Owner: Người B)
   static const String promotions = '/promotions';
@@ -96,7 +97,8 @@ class ApiConfig {
   // Payments (Owner: Người B)
   static const String payments = '/payments';
   static String paymentDetail(dynamic paymentId) => '/payments/$paymentId';
-  static String paymentStatus(dynamic paymentId) => '/payments/$paymentId/status';
+  static String paymentStatus(dynamic paymentId) =>
+      '/payments/$paymentId/status';
 
   // Tickets (Owner: Người B)
   static const String tickets = '/tickets';

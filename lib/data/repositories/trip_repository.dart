@@ -28,8 +28,9 @@ class MockTripRepository implements TripRepository {
   @override
   Future<List<CityModel>> getCities() async {
     if (_cachedCities != null) return _cachedCities!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/cities.json');
+    final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+      'assets/mock_data/cities.json',
+    );
     _cachedCities = rawList.map((item) => CityModel.fromJson(item)).toList();
     return _cachedCities!;
   }
@@ -37,18 +38,24 @@ class MockTripRepository implements TripRepository {
   @override
   Future<List<PopularRouteModel>> getPopularRoutes() async {
     if (_cachedRoutes != null) return _cachedRoutes!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/popular_routes.json');
-    _cachedRoutes = rawList.map((item) => PopularRouteModel.fromJson(item)).toList();
+    final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+      'assets/mock_data/popular_routes.json',
+    );
+    _cachedRoutes = rawList
+        .map((item) => PopularRouteModel.fromJson(item))
+        .toList();
     return _cachedRoutes!;
   }
 
   @override
   Future<List<OperatorModel>> getOperators() async {
     if (_cachedOperators != null) return _cachedOperators!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/operators.json');
-    _cachedOperators = rawList.map((item) => OperatorModel.fromJson(item)).toList();
+    final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+      'assets/mock_data/operators.json',
+    );
+    _cachedOperators = rawList
+        .map((item) => OperatorModel.fromJson(item))
+        .toList();
     return _cachedOperators!;
   }
 
@@ -59,8 +66,9 @@ class MockTripRepository implements TripRepository {
     String? date,
   }) async {
     if (_cachedTrips == null) {
-      final List<Map<String, dynamic>> rawList =
-          await JsonLoader.loadJsonList('assets/mock_data/trips.json');
+      final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+        'assets/mock_data/trips.json',
+      );
       _cachedTrips = rawList.map((item) => TripModel.fromJson(item)).toList();
     }
 
@@ -80,8 +88,9 @@ class MockTripRepository implements TripRepository {
   @override
   Future<TripModel?> getTripById(String id) async {
     if (_cachedTrips == null) {
-      final List<Map<String, dynamic>> rawList =
-          await JsonLoader.loadJsonList('assets/mock_data/trips.json');
+      final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+        'assets/mock_data/trips.json',
+      );
       _cachedTrips = rawList.map((item) => TripModel.fromJson(item)).toList();
     }
     try {
@@ -100,14 +109,16 @@ class HybridTripRepository implements TripRepository {
   HybridTripRepository({
     TripRemoteDataSource? remoteDataSource,
     MockTripRepository? mockFallback,
-  })  : remoteDataSource = remoteDataSource ?? TripRemoteDataSourceImpl(client: ApiClient()),
-        mockFallback = mockFallback ?? MockTripRepository();
+  }) : remoteDataSource =
+           remoteDataSource ?? TripRemoteDataSourceImpl(client: ApiClient()),
+       mockFallback = mockFallback ?? MockTripRepository();
 
   @override
   Future<List<CityModel>> getCities() => mockFallback.getCities();
 
   @override
-  Future<List<PopularRouteModel>> getPopularRoutes() => mockFallback.getPopularRoutes();
+  Future<List<PopularRouteModel>> getPopularRoutes() =>
+      mockFallback.getPopularRoutes();
 
   @override
   Future<List<OperatorModel>> getOperators() => mockFallback.getOperators();
@@ -129,7 +140,9 @@ class HybridTripRepository implements TripRepository {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridTripRepository] Remote search failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridTripRepository] Remote search failed, fallback to mock: $e',
+        );
       }
     }
     return mockFallback.searchTrips(
@@ -146,7 +159,9 @@ class HybridTripRepository implements TripRepository {
       return trip;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridTripRepository] Remote getTripById failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridTripRepository] Remote getTripById failed, fallback to mock: $e',
+        );
       }
     }
     return mockFallback.getTripById(id);

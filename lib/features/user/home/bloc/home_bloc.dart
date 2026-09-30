@@ -7,7 +7,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final TripRepository tripRepository;
 
   HomeBloc({required this.tripRepository})
-      : super(HomeState(departureDate: DateTime.now().add(const Duration(days: 1)))) {
+    : super(
+        HomeState(departureDate: DateTime.now().add(const Duration(days: 1))),
+      ) {
     on<LoadHomeDataEvent>(_onLoadHomeData);
     on<ChangeServiceTypeEvent>(_onChangeServiceType);
     on<SwapCitiesEvent>(_onSwapCities);
@@ -39,19 +41,23 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         orElse: () => cities.length > 1 ? cities[1] : cities.first,
       );
 
-      emit(state.copyWith(
-        status: HomeStatus.success,
-        cities: cities,
-        popularRoutes: popularRoutes,
-        operators: operators,
-        departureCity: defaultDepartureCity,
-        destinationCity: defaultDestinationCity,
-      ));
+      emit(
+        state.copyWith(
+          status: HomeStatus.success,
+          cities: cities,
+          popularRoutes: popularRoutes,
+          operators: operators,
+          departureCity: defaultDepartureCity,
+          destinationCity: defaultDestinationCity,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: HomeStatus.failure,
-        errorMessage: 'Không thể tải dữ liệu trang chủ: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: HomeStatus.failure,
+          errorMessage: 'Không thể tải dữ liệu trang chủ: $e',
+        ),
+      );
     }
   }
 
@@ -62,15 +68,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     emit(state.copyWith(selectedService: event.serviceType));
   }
 
-  void _onSwapCities(
-    SwapCitiesEvent event,
-    Emitter<HomeState> emit,
-  ) {
+  void _onSwapCities(SwapCitiesEvent event, Emitter<HomeState> emit) {
     final temp = state.departureCity;
-    emit(state.copyWith(
-      departureCity: state.destinationCity,
-      destinationCity: temp,
-    ));
+    emit(
+      state.copyWith(
+        departureCity: state.destinationCity,
+        destinationCity: temp,
+      ),
+    );
   }
 
   void _onSelectDepartureCity(
@@ -101,16 +106,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     emit(state.copyWith(returnDate: event.date));
   }
 
-  void _onToggleRoundTrip(
-    ToggleRoundTripEvent event,
-    Emitter<HomeState> emit,
-  ) {
-    emit(state.copyWith(
-      isRoundTrip: event.isRoundTrip,
-      returnDate: event.isRoundTrip
-          ? (state.returnDate ?? state.departureDate.add(const Duration(days: 2)))
-          : null,
-    ));
+  void _onToggleRoundTrip(ToggleRoundTripEvent event, Emitter<HomeState> emit) {
+    emit(
+      state.copyWith(
+        isRoundTrip: event.isRoundTrip,
+        returnDate: event.isRoundTrip
+            ? (state.returnDate ??
+                  state.departureDate.add(const Duration(days: 2)))
+            : null,
+      ),
+    );
   }
 
   void _onUpdateTicketCount(

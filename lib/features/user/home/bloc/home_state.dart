@@ -71,17 +71,17 @@ class HomeState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        selectedService,
-        cities,
-        popularRoutes,
-        operators,
-        departureCity,
-        destinationCity,
-        ticketCount,
-        departureDate,
-        returnDate,
-        isRoundTrip,
-        errorMessage,
-      ];
+    status,
+    selectedService,
+    cities,
+    popularRoutes,
+    operators,
+    departureCity,
+    destinationCity,
+    ticketCount,
+    departureDate,
+    returnDate,
+    isRoundTrip,
+    errorMessage,
+  ];
 }

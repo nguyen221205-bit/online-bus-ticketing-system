@@ -118,9 +118,13 @@ class BookingModel extends Equatable {
     // Parse contact
     PassengerInfo parsedContact;
     if (json['contact'] is Map<String, dynamic>) {
-      parsedContact = PassengerInfo.fromJson(json['contact'] as Map<String, dynamic>);
+      parsedContact = PassengerInfo.fromJson(
+        json['contact'] as Map<String, dynamic>,
+      );
     } else if (json['passenger'] is Map<String, dynamic>) {
-      parsedContact = PassengerInfo.fromJson(json['passenger'] as Map<String, dynamic>);
+      parsedContact = PassengerInfo.fromJson(
+        json['passenger'] as Map<String, dynamic>,
+      );
     } else {
       parsedContact = PassengerInfo(
         fullName: json['customerName'] as String? ?? '',
@@ -130,12 +134,17 @@ class BookingModel extends Equatable {
     }
 
     final totalAmount = (json['totalAmount'] as num?)?.toInt() ?? 0;
-    final originalAmount = (json['originalAmount'] as num?)?.toInt() ?? totalAmount;
+    final originalAmount =
+        (json['originalAmount'] as num?)?.toInt() ?? totalAmount;
     final discountAmount = (json['discountAmount'] as num?)?.toInt() ?? 0;
 
     return BookingModel(
-      bookingId: (json['bookingId'] as num?)?.toInt() ?? (json['id'] as num?)?.toInt() ?? 0,
-      bookingCode: json['bookingCode'] as String? ?? json['code'] as String? ?? '',
+      bookingId:
+          (json['bookingId'] as num?)?.toInt() ??
+          (json['id'] as num?)?.toInt() ??
+          0,
+      bookingCode:
+          json['bookingCode'] as String? ?? json['code'] as String? ?? '',
       tripId: (json['tripId'] as num?)?.toInt() ?? 0,
       status: parseStatus(json['status'] as String?),
       contact: parsedContact,
@@ -148,8 +157,12 @@ class BookingModel extends Equatable {
       discountAmount: discountAmount,
       promotionCode: json['promotionCode'] as String?,
       holdToken: json['holdToken'] as String?,
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
-      expiresAt: json['expiresAt'] != null ? DateTime.tryParse(json['expiresAt'] as String) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'] as String)
+          : null,
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.tryParse(json['expiresAt'] as String)
+          : null,
     );
   }
 
@@ -181,5 +194,12 @@ class BookingModel extends Equatable {
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   @override
-  List<Object?> get props => [bookingId, bookingCode, tripId, status, totalAmount, seatIds];
+  List<Object?> get props => [
+    bookingId,
+    bookingCode,
+    tripId,
+    status,
+    totalAmount,
+    seatIds,
+  ];
 }

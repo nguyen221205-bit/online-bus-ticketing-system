@@ -5,7 +5,10 @@ import '../../../core/network/api_config.dart';
 
 abstract class SeatRemoteDataSource {
   Future<List<SeatModel>> getTripSeats(dynamic tripId);
-  Future<SeatHoldModel> createSeatHold({required int tripId, required List<int> seatIds});
+  Future<SeatHoldModel> createSeatHold({
+    required int tripId,
+    required List<int> seatIds,
+  });
   Future<bool> releaseSeatHold(String holdToken);
 }
 
@@ -19,7 +22,9 @@ class SeatRemoteDataSourceImpl implements SeatRemoteDataSource {
     final res = await client.get(ApiConfig.tripSeats(tripId));
     if (res is Map<String, dynamic> && res['data'] is List) {
       final list = res['data'] as List;
-      return list.map((item) => SeatModel.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => SeatModel.fromJson(item as Map<String, dynamic>))
+          .toList();
     }
     return [];
   }
@@ -29,10 +34,7 @@ class SeatRemoteDataSourceImpl implements SeatRemoteDataSource {
     required int tripId,
     required List<int> seatIds,
   }) async {
-    final body = {
-      'tripId': tripId,
-      'seatIds': seatIds,
-    };
+    final body = {'tripId': tripId, 'seatIds': seatIds};
     final res = await client.post(ApiConfig.seatHolds, body: body);
     if (res is Map<String, dynamic>) {
       final data = res['data'] ?? res;

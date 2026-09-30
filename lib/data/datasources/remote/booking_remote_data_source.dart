@@ -47,7 +47,8 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
     final body = {
       'tripId': tripId,
       'seatIds': seatIds,
-      if (promotionCode != null && promotionCode.isNotEmpty) 'promotionCode': promotionCode,
+      if (promotionCode != null && promotionCode.isNotEmpty)
+        'promotionCode': promotionCode,
     };
 
     final res = await client.post(ApiConfig.bookingQuote, body: body);
@@ -96,11 +97,16 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
       'pickupPoint': pickupPoint,
       'dropoffPoint': dropoffPoint,
       'contact': contact.toJson(),
-      if (promotionCode != null && promotionCode.isNotEmpty) 'promotionCode': promotionCode,
+      if (promotionCode != null && promotionCode.isNotEmpty)
+        'promotionCode': promotionCode,
       if (holdToken != null && holdToken.isNotEmpty) 'holdToken': holdToken,
     };
 
-    final res = await client.post(ApiConfig.bookings, body: body, requiresAuth: true);
+    final res = await client.post(
+      ApiConfig.bookings,
+      body: body,
+      requiresAuth: true,
+    );
     if (res is Map<String, dynamic>) {
       final data = res['data'] ?? res;
       return BookingModel.fromJson(data as Map<String, dynamic>);
@@ -110,7 +116,10 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
 
   @override
   Future<BookingModel> getBookingById(dynamic bookingId) async {
-    final res = await client.get(ApiConfig.bookingDetail(bookingId), requiresAuth: true);
+    final res = await client.get(
+      ApiConfig.bookingDetail(bookingId),
+      requiresAuth: true,
+    );
     if (res is Map<String, dynamic>) {
       final data = res['data'] ?? res;
       return BookingModel.fromJson(data as Map<String, dynamic>);
@@ -119,12 +128,21 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   }
 
   @override
-  Future<List<BookingModel>> getMyBookings({int page = 1, int pageSize = 10}) async {
+  Future<List<BookingModel>> getMyBookings({
+    int page = 1,
+    int pageSize = 10,
+  }) async {
     final query = {'page': page, 'pageSize': pageSize};
-    final res = await client.get(ApiConfig.bookings, queryParams: query, requiresAuth: true);
+    final res = await client.get(
+      ApiConfig.bookings,
+      queryParams: query,
+      requiresAuth: true,
+    );
     if (res is Map<String, dynamic> && res['data'] is List) {
       final list = res['data'] as List;
-      return list.map((e) => BookingModel.fromJson(e as Map<String, dynamic>)).toList();
+      return list
+          .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
     return [];
   }

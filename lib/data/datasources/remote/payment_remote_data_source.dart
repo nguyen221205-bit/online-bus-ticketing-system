@@ -21,12 +21,13 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     required int bookingId,
     required String provider,
   }) async {
-    final body = {
-      'bookingId': bookingId,
-      'provider': provider.toUpperCase(),
-    };
+    final body = {'bookingId': bookingId, 'provider': provider.toUpperCase()};
 
-    final res = await client.post(ApiConfig.payments, body: body, requiresAuth: true);
+    final res = await client.post(
+      ApiConfig.payments,
+      body: body,
+      requiresAuth: true,
+    );
     if (res is Map<String, dynamic>) {
       final data = res['data'] ?? res;
       return PaymentTransactionModel.fromJson(data as Map<String, dynamic>);
@@ -36,7 +37,10 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
 
   @override
   Future<PaymentTransactionModel> getPaymentStatus(dynamic paymentId) async {
-    final res = await client.get(ApiConfig.paymentStatus(paymentId), requiresAuth: true);
+    final res = await client.get(
+      ApiConfig.paymentStatus(paymentId),
+      requiresAuth: true,
+    );
     if (res is Map<String, dynamic>) {
       final data = res['data'] ?? res;
       return PaymentTransactionModel.fromJson(data as Map<String, dynamic>);

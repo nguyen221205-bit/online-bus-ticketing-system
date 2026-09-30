@@ -40,12 +40,13 @@ class VexGoApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<MyTicketsBloc>(
-            create: (context) => MyTicketsBloc()..add(const LoadMyTicketsEvent()),
+            create: (context) =>
+                MyTicketsBloc()..add(const LoadMyTicketsEvent()),
           ),
           BlocProvider<AuthBloc>(
-            create: (context) => AuthBloc(
-              authRepository: context.read<AuthRepository>(),
-            )..add(const CheckAuthStatusEvent()),
+            create: (context) =>
+                AuthBloc(authRepository: context.read<AuthRepository>())
+                  ..add(const CheckAuthStatusEvent()),
           ),
           BlocProvider<NotificationBloc>(
             create: (context) => NotificationBloc(

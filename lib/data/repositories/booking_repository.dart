@@ -66,17 +66,21 @@ class MockBookingRepository implements BookingRepository {
   @override
   Future<List<VoucherModel>> getVouchers() async {
     if (_cachedVouchers != null) return _cachedVouchers!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/vouchers.json');
-    _cachedVouchers = rawList.map((item) => VoucherModel.fromJson(item)).toList();
+    final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+      'assets/mock_data/vouchers.json',
+    );
+    _cachedVouchers = rawList
+        .map((item) => VoucherModel.fromJson(item))
+        .toList();
     return _cachedVouchers!;
   }
 
   @override
   Future<List<TicketModel>> getMyTickets() async {
     if (_cachedTickets != null) return _cachedTickets!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/my_tickets.json');
+    final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+      'assets/mock_data/my_tickets.json',
+    );
     _cachedTickets = rawList.map((item) => TicketModel.fromJson(item)).toList();
     return _cachedTickets!;
   }
@@ -85,9 +89,7 @@ class MockBookingRepository implements BookingRepository {
   Future<TicketModel?> getTicketById(String id) async {
     final tickets = await getMyTickets();
     try {
-      return tickets.firstWhere(
-        (t) => t.id == id || t.ticketCode == id,
-      );
+      return tickets.firstWhere((t) => t.id == id || t.ticketCode == id);
     } catch (_) {
       return null;
     }
@@ -96,9 +98,12 @@ class MockBookingRepository implements BookingRepository {
   @override
   Future<List<NotificationModel>> getNotifications() async {
     if (_cachedNotifications != null) return _cachedNotifications!;
-    final List<Map<String, dynamic>> rawList =
-        await JsonLoader.loadJsonList('assets/mock_data/notifications.json');
-    _cachedNotifications = rawList.map((item) => NotificationModel.fromJson(item)).toList();
+    final List<Map<String, dynamic>> rawList = await JsonLoader.loadJsonList(
+      'assets/mock_data/notifications.json',
+    );
+    _cachedNotifications = rawList
+        .map((item) => NotificationModel.fromJson(item))
+        .toList();
     return _cachedNotifications!;
   }
 
@@ -150,7 +155,8 @@ class MockBookingRepository implements BookingRepository {
     int discount = 0;
     if (promotionCode != null && promotionCode.toUpperCase() == 'SUMMER26') {
       discount = (originalTotal * 0.1).toInt();
-    } else if (promotionCode != null && promotionCode.toUpperCase() == 'VEXGO50') {
+    } else if (promotionCode != null &&
+        promotionCode.toUpperCase() == 'VEXGO50') {
       discount = 50000;
     }
     return BookingQuoteModel(
@@ -160,7 +166,9 @@ class MockBookingRepository implements BookingRepository {
       discountAmount: discount,
       finalTotal: originalTotal - discount,
       appliedPromotionCode: discount > 0 ? promotionCode : null,
-      promotionDescription: discount > 0 ? 'Mã giảm giá áp dụng thành công' : null,
+      promotionDescription: discount > 0
+          ? 'Mã giảm giá áp dụng thành công'
+          : null,
     );
   }
 
@@ -244,7 +252,9 @@ class MockBookingRepository implements BookingRepository {
       bookingId: bookingId,
       provider: prov == 'VNPAY'
           ? PaymentProvider.vnpay
-          : (prov == 'ZALOPAY' ? PaymentProvider.zalopay : PaymentProvider.momo),
+          : (prov == 'ZALOPAY'
+                ? PaymentProvider.zalopay
+                : PaymentProvider.momo),
       amount: 450000,
       paymentUrl: 'https://test-payment.$prov.vn/pay?id=$paymentId',
       deeplink: '$prov://app?pay=$paymentId',
@@ -277,11 +287,13 @@ class HybridBookingRepository implements BookingRepository {
     BookingRemoteDataSource? remoteBookingDataSource,
     PaymentRemoteDataSource? remotePaymentDataSource,
     MockBookingRepository? mockFallback,
-  })  : remoteBookingDataSource =
-            remoteBookingDataSource ?? BookingRemoteDataSourceImpl(client: ApiClient()),
-        remotePaymentDataSource =
-            remotePaymentDataSource ?? PaymentRemoteDataSourceImpl(client: ApiClient()),
-        mockFallback = mockFallback ?? MockBookingRepository();
+  }) : remoteBookingDataSource =
+           remoteBookingDataSource ??
+           BookingRemoteDataSourceImpl(client: ApiClient()),
+       remotePaymentDataSource =
+           remotePaymentDataSource ??
+           PaymentRemoteDataSourceImpl(client: ApiClient()),
+       mockFallback = mockFallback ?? MockBookingRepository();
 
   @override
   Future<List<VoucherModel>> getVouchers() => mockFallback.getVouchers();
@@ -290,10 +302,12 @@ class HybridBookingRepository implements BookingRepository {
   Future<List<TicketModel>> getMyTickets() => mockFallback.getMyTickets();
 
   @override
-  Future<TicketModel?> getTicketById(String id) => mockFallback.getTicketById(id);
+  Future<TicketModel?> getTicketById(String id) =>
+      mockFallback.getTicketById(id);
 
   @override
-  Future<List<NotificationModel>> getNotifications() => mockFallback.getNotifications();
+  Future<List<NotificationModel>> getNotifications() =>
+      mockFallback.getNotifications();
 
   @override
   Future<TicketModel> createBooking({
@@ -353,7 +367,9 @@ class HybridBookingRepository implements BookingRepository {
       return newTicket;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridBookingRepository] Remote booking failed, falling back to mock: $e');
+        debugPrint(
+          '[HybridBookingRepository] Remote booking failed, falling back to mock: $e',
+        );
       }
       return mockFallback.createBooking(
         trip: trip,
@@ -381,7 +397,9 @@ class HybridBookingRepository implements BookingRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridBookingRepository] Remote quote failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridBookingRepository] Remote quote failed, fallback to mock: $e',
+        );
       }
       return mockFallback.getBookingQuote(
         tripId: tripId,
@@ -407,7 +425,9 @@ class HybridBookingRepository implements BookingRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridBookingRepository] Remote promo validation failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridBookingRepository] Remote promo validation failed, fallback to mock: $e',
+        );
       }
       return mockFallback.validatePromotion(
         code: code,
@@ -440,7 +460,9 @@ class HybridBookingRepository implements BookingRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridBookingRepository] Remote create booking failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridBookingRepository] Remote create booking failed, fallback to mock: $e',
+        );
       }
       return mockFallback.createApiBooking(
         tripId: tripId,
@@ -466,9 +488,14 @@ class HybridBookingRepository implements BookingRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridBookingRepository] Remote create payment failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridBookingRepository] Remote create payment failed, fallback to mock: $e',
+        );
       }
-      return mockFallback.createPayment(bookingId: bookingId, provider: provider);
+      return mockFallback.createPayment(
+        bookingId: bookingId,
+        provider: provider,
+      );
     }
   }
 
@@ -478,7 +505,9 @@ class HybridBookingRepository implements BookingRepository {
       return await remotePaymentDataSource.getPaymentStatus(paymentId);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridBookingRepository] Remote get payment status failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridBookingRepository] Remote get payment status failed, fallback to mock: $e',
+        );
       }
       return mockFallback.getPaymentStatus(paymentId);
     }

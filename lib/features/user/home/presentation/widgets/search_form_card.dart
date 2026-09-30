@@ -100,7 +100,10 @@ class SearchFormCard extends StatelessWidget {
 
                         Padding(
                           padding: const EdgeInsets.only(left: 36, right: 48),
-                          child: const Divider(height: 1, color: AppColors.neutral200),
+                          child: const Divider(
+                            height: 1,
+                            color: AppColors.neutral200,
+                          ),
                         ),
 
                         // Destination City
@@ -109,7 +112,8 @@ class SearchFormCard extends StatelessWidget {
                           icon: Icons.location_on_rounded,
                           iconColor: AppColors.secondary,
                           label: 'Điểm đến',
-                          cityName: state.destinationCity?.name ?? 'Chọn điểm đến',
+                          cityName:
+                              state.destinationCity?.name ?? 'Chọn điểm đến',
                           province: state.destinationCity?.region,
                           onTap: () async {
                             final selected = await SelectCitySheet.show(
@@ -119,7 +123,9 @@ class SearchFormCard extends StatelessWidget {
                               currentCity: state.destinationCity,
                             );
                             if (selected != null) {
-                              homeBloc.add(SelectDestinationCityEvent(selected));
+                              homeBloc.add(
+                                SelectDestinationCityEvent(selected),
+                              );
                             }
                           },
                         ),
@@ -170,13 +176,15 @@ class SearchFormCard extends StatelessWidget {
                         _buildTripTypeChip(
                           label: 'Một chiều',
                           isSelected: !state.isRoundTrip,
-                          onTap: () => homeBloc.add(const ToggleRoundTripEvent(false)),
+                          onTap: () =>
+                              homeBloc.add(const ToggleRoundTripEvent(false)),
                         ),
                         const SizedBox(width: AppDimensions.sm),
                         _buildTripTypeChip(
                           label: 'Khứ hồi',
                           isSelected: state.isRoundTrip,
-                          onTap: () => homeBloc.add(const ToggleRoundTripEvent(true)),
+                          onTap: () =>
+                              homeBloc.add(const ToggleRoundTripEvent(true)),
                         ),
                       ],
                     ),
@@ -195,12 +203,18 @@ class SearchFormCard extends StatelessWidget {
                               onDateSelected: (date) =>
                                   homeBloc.add(SelectDepartureDateEvent(date)),
                             ),
-                            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusMd,
+                            ),
                             child: Container(
-                              padding: const EdgeInsets.all(AppDimensions.sm + 2),
+                              padding: const EdgeInsets.all(
+                                AppDimensions.sm + 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.neutral50,
-                                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusMd,
+                                ),
                                 border: Border.all(color: AppColors.neutral200),
                               ),
                               child: Row(
@@ -213,7 +227,8 @@ class SearchFormCard extends StatelessWidget {
                                   const SizedBox(width: AppDimensions.sm),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Ngày đi',
@@ -223,10 +238,13 @@ class SearchFormCard extends StatelessWidget {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          DateFormatter.formatFullDate(state.departureDate),
-                                          style: AppTextStyles.titleSmall.copyWith(
-                                            fontWeight: FontWeight.w700,
+                                          DateFormatter.formatFullDate(
+                                            state.departureDate,
                                           ),
+                                          style: AppTextStyles.titleSmall
+                                              .copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -246,20 +264,30 @@ class SearchFormCard extends StatelessWidget {
                             child: InkWell(
                               onTap: () => _pickDate(
                                 context,
-                                initialDate: state.returnDate ??
-                                    state.departureDate.add(const Duration(days: 1)),
+                                initialDate:
+                                    state.returnDate ??
+                                    state.departureDate.add(
+                                      const Duration(days: 1),
+                                    ),
                                 firstDate: state.departureDate,
                                 onDateSelected: (date) =>
                                     homeBloc.add(SelectReturnDateEvent(date)),
                               ),
-                              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusMd,
+                              ),
                               child: Container(
-                                padding: const EdgeInsets.all(AppDimensions.sm + 2),
+                                padding: const EdgeInsets.all(
+                                  AppDimensions.sm + 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.neutral50,
-                                  borderRadius:
-                                      BorderRadius.circular(AppDimensions.radiusMd),
-                                  border: Border.all(color: AppColors.neutral200),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusMd,
+                                  ),
+                                  border: Border.all(
+                                    color: AppColors.neutral200,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
@@ -271,22 +299,27 @@ class SearchFormCard extends StatelessWidget {
                                     const SizedBox(width: AppDimensions.sm),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             'Ngày về',
-                                            style: AppTextStyles.caption.copyWith(
-                                              color: AppColors.neutral500,
-                                            ),
+                                            style: AppTextStyles.caption
+                                                .copyWith(
+                                                  color: AppColors.neutral500,
+                                                ),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             state.returnDate != null
-                                                ? DateFormatter.formatFullDate(state.returnDate!)
+                                                ? DateFormatter.formatFullDate(
+                                                    state.returnDate!,
+                                                  )
                                                 : 'Chọn ngày về',
-                                            style: AppTextStyles.titleSmall.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
+                                            style: AppTextStyles.titleSmall
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -309,8 +342,13 @@ class SearchFormCard extends StatelessWidget {
                       children: [
                         _buildQuickDateChip(
                           label: 'Hôm nay',
-                          isSelected: _isSameDay(state.departureDate, DateTime.now()),
-                          onTap: () => homeBloc.add(SelectDepartureDateEvent(DateTime.now())),
+                          isSelected: _isSameDay(
+                            state.departureDate,
+                            DateTime.now(),
+                          ),
+                          onTap: () => homeBloc.add(
+                            SelectDepartureDateEvent(DateTime.now()),
+                          ),
                         ),
                         const SizedBox(width: AppDimensions.xs),
                         _buildQuickDateChip(
@@ -320,23 +358,31 @@ class SearchFormCard extends StatelessWidget {
                             DateTime.now().add(const Duration(days: 1)),
                           ),
                           onTap: () => homeBloc.add(
-                            SelectDepartureDateEvent(DateTime.now().add(const Duration(days: 1))),
+                            SelectDepartureDateEvent(
+                              DateTime.now().add(const Duration(days: 1)),
+                            ),
                           ),
                         ),
                         const Spacer(),
                         // Number of tickets
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.neutral100,
-                            borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusFull,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               GestureDetector(
-                                onTap: () => homeBloc
-                                    .add(UpdateTicketCountEvent(state.ticketCount - 1)),
+                                onTap: () => homeBloc.add(
+                                  UpdateTicketCountEvent(state.ticketCount - 1),
+                                ),
                                 child: const Icon(
                                   Icons.remove_circle_outline_rounded,
                                   size: 18,
@@ -344,7 +390,9 @@ class SearchFormCard extends StatelessWidget {
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 child: Text(
                                   '${state.ticketCount} vé',
                                   style: AppTextStyles.caption.copyWith(
@@ -354,8 +402,9 @@ class SearchFormCard extends StatelessWidget {
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () => homeBloc
-                                    .add(UpdateTicketCountEvent(state.ticketCount + 1)),
+                                onTap: () => homeBloc.add(
+                                  UpdateTicketCountEvent(state.ticketCount + 1),
+                                ),
                                 child: const Icon(
                                   Icons.add_circle_outline_rounded,
                                   size: 18,
@@ -381,7 +430,8 @@ class SearchFormCard extends StatelessWidget {
                       width: double.infinity,
                       onPressed: () {
                         final fromId = state.departureCity?.id ?? 'HCM';
-                        final fromName = state.departureCity?.name ?? 'TP. Hồ Chí Minh';
+                        final fromName =
+                            state.departureCity?.name ?? 'TP. Hồ Chí Minh';
                         final toId = state.destinationCity?.id ?? 'DL';
                         final toName = state.destinationCity?.name ?? 'Đà Lạt';
                         final d = state.departureDate;
@@ -432,7 +482,9 @@ class SearchFormCard extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: AppTextStyles.caption.copyWith(color: AppColors.neutral500),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.neutral500,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -481,7 +533,9 @@ class SearchFormCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.neutral300,

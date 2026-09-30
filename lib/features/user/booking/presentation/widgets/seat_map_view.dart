@@ -23,13 +23,16 @@ class SeatMapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentFloorSeats =
-        selectedFloor == 1 ? layout.lowerFloor : layout.upperFloor;
+    final currentFloorSeats = selectedFloor == 1
+        ? layout.lowerFloor
+        : layout.upperFloor;
 
-    final lowerAvailCount =
-        layout.lowerFloor.where((s) => s.status == SeatStatus.available).length;
-    final upperAvailCount =
-        layout.upperFloor.where((s) => s.status == SeatStatus.available).length;
+    final lowerAvailCount = layout.lowerFloor
+        .where((s) => s.status == SeatStatus.available)
+        .length;
+    final upperAvailCount = layout.upperFloor
+        .where((s) => s.status == SeatStatus.available)
+        .length;
 
     return Column(
       children: [
@@ -264,7 +267,8 @@ class SeatMapView extends StatelessWidget {
 
     return Column(
       children: sortedRowKeys.map((rowKey) {
-        final rowSeats = rowsMap[rowKey]!..sort((a, b) => a.col.compareTo(b.col));
+        final rowSeats = rowsMap[rowKey]!
+          ..sort((a, b) => a.col.compareTo(b.col));
         return _buildRow(rowSeats);
       }).toList(),
     );
@@ -272,7 +276,9 @@ class SeatMapView extends StatelessWidget {
 
   Widget _buildRow(List<SeatModel> rowSeats) {
     // Check max column count in this row to determine spacing/aisle
-    final maxCol = rowSeats.map((s) => s.col).fold(1, (prev, curr) => curr > prev ? curr : prev);
+    final maxCol = rowSeats
+        .map((s) => s.col)
+        .fold(1, (prev, curr) => curr > prev ? curr : prev);
 
     if (maxCol == 2) {
       // 2 columns with central aisle (Left - Aisle - Right)
@@ -310,7 +316,9 @@ class SeatMapView extends StatelessWidget {
               child: rightSeat != null
                   ? SeatItem(
                       seat: rightSeat,
-                      isSelected: selectedSeats.any((s) => s.id == rightSeat.id),
+                      isSelected: selectedSeats.any(
+                        (s) => s.id == rightSeat.id,
+                      ),
                       onTap: () => onSeatToggled(rightSeat),
                     )
                   : const SizedBox.shrink(),

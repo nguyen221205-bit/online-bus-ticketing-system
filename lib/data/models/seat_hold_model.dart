@@ -48,15 +48,20 @@ class SeatHoldModel extends Equatable {
     // Parse seatCodes if provided
     List<String> parsedSeatCodes = [];
     if (json['seatCodes'] is List) {
-      parsedSeatCodes = (json['seatCodes'] as List).map((e) => e.toString()).toList();
+      parsedSeatCodes = (json['seatCodes'] as List)
+          .map((e) => e.toString())
+          .toList();
     } else if (json['seats'] is List) {
-      parsedSeatCodes = (json['seats'] as List).map((e) => e.toString()).toList();
+      parsedSeatCodes = (json['seats'] as List)
+          .map((e) => e.toString())
+          .toList();
     }
 
     // Parse dates
     DateTime parsedExpiresAt;
     if (json['expiresAt'] is String) {
-      parsedExpiresAt = DateTime.tryParse(json['expiresAt'] as String) ??
+      parsedExpiresAt =
+          DateTime.tryParse(json['expiresAt'] as String) ??
           DateTime.now().add(const Duration(minutes: 10));
     } else {
       parsedExpiresAt = DateTime.now().add(const Duration(minutes: 10));
@@ -89,7 +94,8 @@ class SeatHoldModel extends Equatable {
   /// Countdown helpers
   bool get isExpired => DateTime.now().isAfter(expiresAt);
   Duration get remainingTime => expiresAt.difference(DateTime.now());
-  int get remainingSeconds => remainingTime.isNegative ? 0 : remainingTime.inSeconds;
+  int get remainingSeconds =>
+      remainingTime.isNegative ? 0 : remainingTime.inSeconds;
 
   /// Returns remaining time formatted as mm:ss
   String get formattedRemainingTime {

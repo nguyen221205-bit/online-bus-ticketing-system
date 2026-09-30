@@ -43,7 +43,9 @@ class ServiceCategoryTabs extends StatelessWidget {
                         );
                         return;
                       }
-                      context.read<HomeBloc>().add(ChangeServiceTypeEvent(service));
+                      context.read<HomeBloc>().add(
+                        ChangeServiceTypeEvent(service),
+                      );
                     },
                     borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
                     child: AnimatedContainer(
@@ -53,8 +55,12 @@ class ServiceCategoryTabs extends StatelessWidget {
                         horizontal: AppDimensions.xs,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMd,
+                        ),
                         boxShadow: isSelected
                             ? const [
                                 BoxShadow(
@@ -75,14 +81,20 @@ class ServiceCategoryTabs extends StatelessWidget {
                               Icon(
                                 service.icon,
                                 size: 22,
-                                color: isSelected ? AppColors.primary : Colors.white,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.white,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 service.label,
                                 style: AppTextStyles.caption.copyWith(
-                                  color: isSelected ? AppColors.primary : Colors.white,
-                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.white,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
                                   fontSize: 11,
                                 ),
                                 maxLines: 1,
@@ -95,7 +107,10 @@ class ServiceCategoryTabs extends StatelessWidget {
                               top: -8,
                               right: -4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.secondary,
                                   borderRadius: BorderRadius.circular(4),

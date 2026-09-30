@@ -1,18 +1,8 @@
 import 'package:equatable/equatable.dart';
 
-enum PaymentProvider {
-  momo,
-  vnpay,
-  zalopay,
-  cash,
-}
+enum PaymentProvider { momo, vnpay, zalopay, cash }
 
-enum PaymentStatus {
-  pending,
-  success,
-  failed,
-  cancelled,
-}
+enum PaymentStatus { pending, success, failed, cancelled }
 
 /// Model representing an online payment transaction per endpoint-api.md 5.7
 class PaymentTransactionModel extends Equatable {
@@ -112,7 +102,10 @@ class PaymentTransactionModel extends Equatable {
     }
 
     return PaymentTransactionModel(
-      paymentId: (json['paymentId'] as num?)?.toInt() ?? (json['id'] as num?)?.toInt() ?? 0,
+      paymentId:
+          (json['paymentId'] as num?)?.toInt() ??
+          (json['id'] as num?)?.toInt() ??
+          0,
       bookingId: (json['bookingId'] as num?)?.toInt() ?? 0,
       provider: parseProvider(json['provider'] as String?),
       amount: (json['amount'] as num?)?.toInt() ?? 0,
@@ -120,11 +113,18 @@ class PaymentTransactionModel extends Equatable {
       deeplink: json['deeplink'] as String? ?? json['deeplinkUrl'] as String?,
       qrCodeUrl: json['qrCodeUrl'] as String?,
       status: parseStatus(json['status'] as String?),
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
-      expiresAt: json['expiresAt'] != null ? DateTime.tryParse(json['expiresAt'] as String) : null,
-      paidAt: json['paidAt'] != null ? DateTime.tryParse(json['paidAt'] as String) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'] as String)
+          : null,
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.tryParse(json['expiresAt'] as String)
+          : null,
+      paidAt: json['paidAt'] != null
+          ? DateTime.tryParse(json['paidAt'] as String)
+          : null,
       transactionCode: json['transactionCode'] as String?,
-      failureReason: json['failureReason'] as String? ?? json['message'] as String?,
+      failureReason:
+          json['failureReason'] as String? ?? json['message'] as String?,
     );
   }
 
@@ -152,5 +152,12 @@ class PaymentTransactionModel extends Equatable {
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   @override
-  List<Object?> get props => [paymentId, bookingId, provider, amount, status, transactionCode];
+  List<Object?> get props => [
+    paymentId,
+    bookingId,
+    provider,
+    amount,
+    status,
+    transactionCode,
+  ];
 }

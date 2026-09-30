@@ -39,12 +39,14 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     InitBookingFlowEvent event,
     Emitter<BookingFlowState> emit,
   ) async {
-    emit(state.copyWith(
-      status: BookingFlowStatus.loading,
-      trip: event.trip,
-      date: event.date,
-      targetTicketCount: event.ticketCount,
-    ));
+    emit(
+      state.copyWith(
+        status: BookingFlowStatus.loading,
+        trip: event.trip,
+        date: event.date,
+        targetTicketCount: event.ticketCount,
+      ),
+    );
 
     try {
       final tripId = event.trip.numericTripId ?? int.tryParse(event.trip.id);
@@ -61,10 +63,14 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
             upperFloor: upper,
           );
         } else {
-          seatLayout = await seatRepository.getSeatLayout(event.trip.seatLayoutType);
+          seatLayout = await seatRepository.getSeatLayout(
+            event.trip.seatLayoutType,
+          );
         }
       } else {
-        seatLayout = await seatRepository.getSeatLayout(event.trip.seatLayoutType);
+        seatLayout = await seatRepository.getSeatLayout(
+          event.trip.seatLayoutType,
+        );
       }
       final vouchers = await bookingRepository.getVouchers();
 
@@ -87,29 +93,33 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         );
       }
 
-      emit(state.copyWith(
-        status: BookingFlowStatus.loaded,
-        seatLayout: seatLayout,
-        availableVouchers: vouchers,
-        availablePickupPoints: pickups,
-        selectedPickupPoint: defaultPickup,
-        availableDropoffPoints: dropoffs,
-        selectedDropoffPoint: defaultDropoff,
-        selectedFloor: 1,
-      ));
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.loaded,
+          seatLayout: seatLayout,
+          availableVouchers: vouchers,
+          availablePickupPoints: pickups,
+          selectedPickupPoint: defaultPickup,
+          availableDropoffPoints: dropoffs,
+          selectedDropoffPoint: defaultDropoff,
+          selectedFloor: 1,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: BookingFlowStatus.failure,
-        errorMessage: 'Không thể tải sơ đồ xe: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: 'Không thể tải sơ đồ xe: $e',
+        ),
+      );
     }
   }
 
-  void _onToggleSeat(
-    ToggleSeatEvent event,
-    Emitter<BookingFlowState> emit,
-  ) {
-    if (event.seat.status == SeatStatus.booked || event.seat.status == SeatStatus.held) return;
+  void _onToggleSeat(ToggleSeatEvent event, Emitter<BookingFlowState> emit) {
+    if (event.seat.status == SeatStatus.booked ||
+        event.seat.status == SeatStatus.held) {
+      return;
+    }
 
     if (state.seatHold != null) {
       seatRepository.releaseSeatHold(state.seatHold!.holdToken);
@@ -121,31 +131,34 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
 
     if (exists) {
       currentSelected.removeWhere((s) => s.id == event.seat.id);
-      emit(state.copyWith(
-        selectedSeats: currentSelected,
-        clearSeatHold: state.seatHold != null,
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(
+          selectedSeats: currentSelected,
+          clearSeatHold: state.seatHold != null,
+          errorMessage: null,
+        ),
+      );
     } else {
       if (currentSelected.length >= 6) {
-        emit(state.copyWith(
-          errorMessage: 'Bạn chỉ có thể chọn tối đa 6 chỗ trong một lần đặt!',
-        ));
+        emit(
+          state.copyWith(
+            errorMessage: 'Bạn chỉ có thể chọn tối đa 6 chỗ trong một lần đặt!',
+          ),
+        );
         return;
       }
       currentSelected.add(event.seat);
-      emit(state.copyWith(
-        selectedSeats: currentSelected,
-        clearSeatHold: state.seatHold != null,
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(
+          selectedSeats: currentSelected,
+          clearSeatHold: state.seatHold != null,
+          errorMessage: null,
+        ),
+      );
     }
   }
 
-  void _onChangeFloor(
-    ChangeFloorEvent event,
-    Emitter<BookingFlowState> emit,
-  ) {
+  void _onChangeFloor(ChangeFloorEvent event, Emitter<BookingFlowState> emit) {
     emit(state.copyWith(selectedFloor: event.floor));
   }
 
@@ -167,13 +180,15 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     UpdatePassengerInfoEvent event,
     Emitter<BookingFlowState> emit,
   ) {
-    emit(state.copyWith(
-      passengerName: event.name,
-      passengerPhone: event.phone,
-      passengerEmail: event.email,
-      passengerNote: event.note,
-      savePassengerInfo: event.saveInfo,
-    ));
+    emit(
+      state.copyWith(
+        passengerName: event.name,
+        passengerPhone: event.phone,
+        passengerEmail: event.email,
+        passengerNote: event.note,
+        savePassengerInfo: event.saveInfo,
+      ),
+    );
   }
 
   void _onApplyVoucher(
@@ -205,13 +220,19 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
       emit(state.copyWith(countdownSeconds: state.countdownSeconds - 1));
     } else {
       _stopCountdown();
-      emit(state.copyWith(
-        countdownSeconds: 0,
-        status: BookingFlowStatus.failure,
-        errorMessage: 'Hết thời gian giữ ghế. Vui lòng chọn lại chỗ ngồi.',
-        step: BookingStep.seatSelection,
-        clearSeatHold: true,
-      ));
+      final hold = state.seatHold;
+      if (hold != null) {
+        seatRepository.releaseSeatHold(hold.holdToken);
+      }
+      emit(
+        state.copyWith(
+          countdownSeconds: 0,
+          status: BookingFlowStatus.failure,
+          errorMessage: 'Hết thời gian giữ ghế. Vui lòng chọn lại chỗ ngồi.',
+          step: BookingStep.seatSelection,
+          clearSeatHold: true,
+        ),
+      );
     }
   }
 
@@ -223,7 +244,8 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
 
     // Moving from seatSelection: reserve seats via SeatHold API
     if (state.step == BookingStep.seatSelection && state.seatHold == null) {
-      final tripId = state.trip?.numericTripId ?? int.tryParse(state.trip?.id ?? '') ?? 0;
+      final tripId =
+          state.trip?.numericTripId ?? int.tryParse(state.trip?.id ?? '') ?? 0;
       final seatIds = state.selectedSeats
           .map((s) => s.numericSeatId ?? int.tryParse(s.id) ?? 0)
           .toList();
@@ -234,44 +256,55 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
           tripId: tripId,
           seatIds: seatIds,
         );
-        emit(state.copyWith(
-          status: BookingFlowStatus.loaded,
-          seatHold: hold,
-          countdownSeconds: hold.remainingSeconds > 0 ? hold.remainingSeconds : 600,
-          step: BookingStep.pickupPoint,
-          errorMessage: null,
-        ));
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.loaded,
+            seatHold: hold,
+            countdownSeconds: hold.remainingSeconds > 0
+                ? hold.remainingSeconds
+                : 600,
+            step: BookingStep.pickupPoint,
+            errorMessage: null,
+          ),
+        );
         _startCountdown();
         return;
       } on ApiException catch (e) {
-        emit(state.copyWith(
-          status: BookingFlowStatus.failure,
-          errorMessage: e.message,
-        ));
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.failure,
+            errorMessage: e.message,
+          ),
+        );
         if (state.trip != null) {
-          final tripId = state.trip!.numericTripId ?? int.tryParse(state.trip!.id);
+          final tripId =
+              state.trip!.numericTripId ?? int.tryParse(state.trip!.id);
           if (tripId != null && tripId > 0) {
             final realSeats = await seatRepository.getTripSeats(tripId);
             if (realSeats.isNotEmpty) {
               final lower = realSeats.where((s) => s.floor == 1).toList();
               final upper = realSeats.where((s) => s.floor == 2).toList();
-              emit(state.copyWith(
-                seatLayout: SeatLayoutModel(
-                  vehicleType: state.trip!.vehicleType,
-                  hasTwoFloors: upper.isNotEmpty,
-                  lowerFloor: lower,
-                  upperFloor: upper,
+              emit(
+                state.copyWith(
+                  seatLayout: SeatLayoutModel(
+                    vehicleType: state.trip!.vehicleType,
+                    hasTwoFloors: upper.isNotEmpty,
+                    lowerFloor: lower,
+                    upperFloor: upper,
+                  ),
                 ),
-              ));
+              );
             }
           }
         }
         return;
       } catch (e) {
-        emit(state.copyWith(
-          status: BookingFlowStatus.failure,
-          errorMessage: 'Không thể giữ chỗ ngồi này. Vui lòng thử lại.',
-        ));
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.failure,
+            errorMessage: 'Không thể giữ chỗ ngồi này. Vui lòng thử lại.',
+          ),
+        );
         return;
       }
     }
@@ -302,17 +335,13 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
   ) {
     final prevIndex = state.step.index - 1;
     if (prevIndex >= 0) {
-      emit(state.copyWith(
-        step: BookingStep.values[prevIndex],
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(step: BookingStep.values[prevIndex], errorMessage: null),
+      );
     }
   }
 
-  void _onGoToStep(
-    GoToStepEvent event,
-    Emitter<BookingFlowState> emit,
-  ) {
+  void _onGoToStep(GoToStepEvent event, Emitter<BookingFlowState> emit) {
     if (event.stepIndex >= 0 && event.stepIndex < BookingStep.values.length) {
       // Allow going back to previous steps without re-validation
       if (event.stepIndex <= state.step.index || state.canProceed) {
@@ -355,7 +384,8 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         pickupPoint: state.selectedPickupPoint?.name ?? trip.pickupPoint,
         pickupAddress: state.selectedPickupPoint?.address ?? trip.pickupAddress,
         dropoffPoint: state.selectedDropoffPoint?.name ?? trip.dropoffPoint,
-        dropoffAddress: state.selectedDropoffPoint?.address ?? trip.dropoffAddress,
+        dropoffAddress:
+            state.selectedDropoffPoint?.address ?? trip.dropoffAddress,
       );
 
       final passenger = PassengerInfo(
@@ -378,15 +408,19 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
 
       _stopCountdown();
 
-      emit(state.copyWith(
-        status: BookingFlowStatus.success,
-        createdTicket: createdTicket,
-      ));
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.success,
+          createdTicket: createdTicket,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: BookingFlowStatus.failure,
-        errorMessage: 'Giao dịch thanh toán không thành công: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: 'Giao dịch thanh toán không thành công: $e',
+        ),
+      );
     }
   }
 

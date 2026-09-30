@@ -79,41 +79,44 @@ void main() {
     // 2. TripModel Backend Contract Mapping
     // -------------------------------------------------------------------------
     group('TripModel Contract', () {
-      test('parses real backend trip JSON with tripId, busCompanyId, price', () {
-        final backendJson = {
-          'tripId': 101,
-          'routeId': 20,
-          'busCompanyId': 5,
-          'busCompanyName': 'Phương Trang FUTA',
-          'vehicleTypeName': 'Limousine 34 Phòng',
-          'price': 280000,
-          'availableSeats': 14,
-          'totalSeats': 34,
-          'departureTime': '2026-10-01T08:00:00+07:00',
-          'arrivalTime': '2026-10-01T14:30:00+07:00',
-          'fromCityName': 'TP. Hồ Chí Minh',
-          'toCityName': 'Đà Lạt',
-          'pickupPoint': 'Bến xe Miền Đông mới',
-          'pickupAddress': 'TP. Thủ Đức',
-          'dropoffPoint': 'Bến xe Đà Lạt',
-          'dropoffAddress': '01 Tô Hiến Thành',
-        };
+      test(
+        'parses real backend trip JSON with tripId, busCompanyId, price',
+        () {
+          final backendJson = {
+            'tripId': 101,
+            'routeId': 20,
+            'busCompanyId': 5,
+            'busCompanyName': 'Phương Trang FUTA',
+            'vehicleTypeName': 'Limousine 34 Phòng',
+            'price': 280000,
+            'availableSeats': 14,
+            'totalSeats': 34,
+            'departureTime': '2026-10-01T08:00:00+07:00',
+            'arrivalTime': '2026-10-01T14:30:00+07:00',
+            'fromCityName': 'TP. Hồ Chí Minh',
+            'toCityName': 'Đà Lạt',
+            'pickupPoint': 'Bến xe Miền Đông mới',
+            'pickupAddress': 'TP. Thủ Đức',
+            'dropoffPoint': 'Bến xe Đà Lạt',
+            'dropoffAddress': '01 Tô Hiến Thành',
+          };
 
-        final trip = TripModel.fromJson(backendJson);
-        expect(trip.id, equals('101'));
-        expect(trip.numericTripId, equals(101));
-        expect(trip.operatorId, equals('5'));
-        expect(trip.numericOperatorId, equals(5));
-        expect(trip.operatorName, equals('Phương Trang FUTA'));
-        expect(trip.busCompanyName, equals('Phương Trang FUTA'));
-        expect(trip.routeId, equals('20'));
-        expect(trip.numericRouteId, equals(20));
-        expect(trip.vehicleType, equals('Limousine 34 Phòng'));
-        expect(trip.discountPrice, equals(280000));
-        expect(trip.originalPrice, equals(280000));
-        expect(trip.availableSeats, equals(14));
-        expect(trip.totalSeats, equals(34));
-      });
+          final trip = TripModel.fromJson(backendJson);
+          expect(trip.id, equals('101'));
+          expect(trip.numericTripId, equals(101));
+          expect(trip.operatorId, equals('5'));
+          expect(trip.numericOperatorId, equals(5));
+          expect(trip.operatorName, equals('Phương Trang FUTA'));
+          expect(trip.busCompanyName, equals('Phương Trang FUTA'));
+          expect(trip.routeId, equals('20'));
+          expect(trip.numericRouteId, equals(20));
+          expect(trip.vehicleType, equals('Limousine 34 Phòng'));
+          expect(trip.discountPrice, equals(280000));
+          expect(trip.originalPrice, equals(280000));
+          expect(trip.availableSeats, equals(14));
+          expect(trip.totalSeats, equals(34));
+        },
+      );
 
       test('remains backward compatible with legacy mock JSON format', () {
         final legacyJson = {
@@ -343,7 +346,8 @@ void main() {
           'bookingId': 888,
           'provider': 'MOMO',
           'amount': 450000,
-          'paymentUrl': 'https://test-payment.momo.vn/v2/gateway/pay?orderId=123',
+          'paymentUrl':
+              'https://test-payment.momo.vn/v2/gateway/pay?orderId=123',
           'deeplink': 'momo://app?action=pay&orderId=123',
           'qrCodeUrl': 'https://test-payment.momo.vn/qr/123.png',
           'status': 'PENDING',

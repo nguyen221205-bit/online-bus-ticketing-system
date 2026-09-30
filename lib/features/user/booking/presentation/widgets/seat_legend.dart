@@ -65,7 +65,11 @@ class SeatLegend extends StatelessWidget {
             border: Border.all(color: borderColor, width: 1.5),
           ),
           child: hasLock
-              ? const Icon(Icons.close_rounded, size: 14, color: AppColors.neutral500)
+              ? const Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: AppColors.neutral500,
+                )
               : null,
         ),
         const SizedBox(width: 6),

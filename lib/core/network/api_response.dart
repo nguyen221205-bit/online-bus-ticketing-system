@@ -42,10 +42,7 @@ class ApiValidationErrorDetail extends Equatable {
   final String field;
   final String message;
 
-  const ApiValidationErrorDetail({
-    required this.field,
-    required this.message,
-  });
+  const ApiValidationErrorDetail({required this.field, required this.message});
 
   factory ApiValidationErrorDetail.fromJson(Map<String, dynamic> json) {
     return ApiValidationErrorDetail(
@@ -54,10 +51,7 @@ class ApiValidationErrorDetail extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'field': field,
-    'message': message,
-  };
+  Map<String, dynamic> toJson() => {'field': field, 'message': message};
 
   @override
   List<Object?> get props => [field, message];
@@ -77,12 +71,16 @@ class ApiError extends Equatable {
     this.details = const [],
   });
 
-  factory ApiError.fromJson(Map<String, dynamic> json, [int fallbackStatusCode = 500]) {
+  factory ApiError.fromJson(
+    Map<String, dynamic> json, [
+    int fallbackStatusCode = 500,
+  ]) {
     final status = json['statusCode'] as int? ?? fallbackStatusCode;
-    
+
     // Handle error field as String ("SEAT_UNAVAILABLE") or Map ({"code": "SEAT_UNAVAILABLE", ...})
     String code = 'UNKNOWN_ERROR';
-    String msg = json['message'] as String? ?? 'Đã có lỗi xảy ra. Vui lòng thử lại sau.';
+    String msg =
+        json['message'] as String? ?? 'Đã có lỗi xảy ra. Vui lòng thử lại sau.';
 
     if (json['error'] is String) {
       code = json['error'] as String;
@@ -129,10 +127,7 @@ class ApiResponse<T> extends Equatable {
   final T? data;
   final ApiError? error;
 
-  const ApiResponse({
-    this.data,
-    this.error,
-  });
+  const ApiResponse({this.data, this.error});
 
   bool get isSuccess => error == null && data != null;
   bool get hasError => error != null;
@@ -163,10 +158,15 @@ class ApiPaginatedResponse<T> extends Equatable {
       ApiPaginatedResponse(data: data, meta: meta);
 
   factory ApiPaginatedResponse.failure(ApiError error) => ApiPaginatedResponse(
-        data: const [],
-        meta: const ApiPaginationMeta(page: 1, pageSize: 10, totalItems: 0, totalPages: 0),
-        error: error,
-      );
+    data: const [],
+    meta: const ApiPaginationMeta(
+      page: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0,
+    ),
+    error: error,
+  );
 
   @override
   List<Object?> get props => [data, meta, error];

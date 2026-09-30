@@ -34,14 +34,17 @@ class BookingFlowScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => BookingFlowBloc(
-        seatRepository: context.read<SeatRepository>(),
-        bookingRepository: context.read<BookingRepository>(),
-      )..add(InitBookingFlowEvent(
-          trip: trip,
-          date: date,
-          ticketCount: ticketCount,
-        )),
+      create: (context) =>
+          BookingFlowBloc(
+            seatRepository: context.read<SeatRepository>(),
+            bookingRepository: context.read<BookingRepository>(),
+          )..add(
+            InitBookingFlowEvent(
+              trip: trip,
+              date: date,
+              ticketCount: ticketCount,
+            ),
+          ),
       child: const _BookingFlowContent(),
     );
   }
@@ -50,7 +53,11 @@ class BookingFlowScreen extends StatelessWidget {
 class _BookingFlowContent extends StatelessWidget {
   const _BookingFlowContent();
 
-  Future<bool> _handlePop(BuildContext context, BookingFlowState state, BookingFlowBloc bloc) async {
+  Future<bool> _handlePop(
+    BuildContext context,
+    BookingFlowState state,
+    BookingFlowBloc bloc,
+  ) async {
     if (state.step.index > 0) {
       bloc.add(const PreviousStepEvent());
       return false;
@@ -70,7 +77,10 @@ class _BookingFlowContent extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Rời khỏi', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Rời khỏi',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -89,13 +99,15 @@ class _BookingFlowContent extends StatelessWidget {
 
     return BlocConsumer<BookingFlowBloc, BookingFlowState>(
       listener: (context, state) {
-        if (state.status == BookingFlowStatus.success && state.createdTicket != null) {
+        if (state.status == BookingFlowStatus.success &&
+            state.createdTicket != null) {
           context.pushReplacement(
             '/booking-success',
             extra: {'ticket': state.createdTicket},
           );
         } else if (state.errorMessage != null) {
-          if (state.errorMessage!.contains('Hết thời gian') || state.errorMessage!.contains('hết hạn')) {
+          if (state.errorMessage!.contains('Hết thời gian') ||
+              state.errorMessage!.contains('hết hạn')) {
             showDialog(
               context: context,
               builder: (ctx) => AlertDialog(
@@ -143,7 +155,9 @@ class _BookingFlowContent extends StatelessWidget {
           child: Scaffold(
             appBar: CustomAppBar(
               title: state.step.title,
-              subtitle: trip != null ? '${trip.operatorName} • ${trip.fromCityName} -> ${trip.toCityName}' : null,
+              subtitle: trip != null
+                  ? '${trip.operatorName} • ${trip.fromCityName} -> ${trip.toCityName}'
+                  : null,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
                 onPressed: () async {
@@ -154,7 +168,9 @@ class _BookingFlowContent extends StatelessWidget {
                 },
               ),
             ),
-            body: state.status == BookingFlowStatus.loading && state.seatLayout == null
+            body:
+                state.status == BookingFlowStatus.loading &&
+                    state.seatLayout == null
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
                     children: [
@@ -165,10 +181,13 @@ class _BookingFlowContent extends StatelessWidget {
                       ),
 
                       // Sticky Countdown Bar when holding seats
-                      if (state.seatHold != null && state.step != BookingStep.seatSelection)
+                      if (state.seatHold != null &&
+                          state.step != BookingStep.seatSelection)
                         SeatHoldCountdownBar(
                           remainingSeconds: state.countdownSeconds,
-                          seatCodes: state.selectedSeats.map((s) => s.name).toList(),
+                          seatCodes: state.selectedSeats
+                              .map((s) => s.name)
+                              .toList(),
                         ),
 
                       // Step View Container
@@ -186,7 +205,8 @@ class _BookingFlowContent extends StatelessWidget {
                     state: state,
                     onNext: () => bloc.add(const NextStepEvent()),
                     onBack: () => bloc.add(const PreviousStepEvent()),
-                    onConfirmPayment: () => bloc.add(const ConfirmPaymentEvent()),
+                    onConfirmPayment: () =>
+                        bloc.add(const ConfirmPaymentEvent()),
                   ),
           ),
         );

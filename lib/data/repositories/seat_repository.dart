@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_exceptions.dart';
 import '../../core/utils/json_loader.dart';
 import '../datasources/remote/seat_remote_data_source.dart';
 import '../models/seat_hold_model.dart';
@@ -8,7 +9,10 @@ import '../models/seat_model.dart';
 abstract class SeatRepository {
   Future<SeatLayoutModel> getSeatLayout(String seatLayoutType);
   Future<List<SeatModel>> getTripSeats(dynamic tripId);
-  Future<SeatHoldModel> createSeatHold({required int tripId, required List<int> seatIds});
+  Future<SeatHoldModel> createSeatHold({
+    required int tripId,
+    required List<int> seatIds,
+  });
   Future<bool> releaseSeatHold(String holdToken);
 }
 
@@ -17,10 +21,12 @@ class MockSeatRepository implements SeatRepository {
 
   @override
   Future<SeatLayoutModel> getSeatLayout(String seatLayoutType) async {
-    _cachedSeatsMap ??=
-        await JsonLoader.loadJsonMap('assets/mock_data/seats.json');
+    _cachedSeatsMap ??= await JsonLoader.loadJsonMap(
+      'assets/mock_data/seats.json',
+    );
 
-    final layoutData = _cachedSeatsMap![seatLayoutType] ?? _cachedSeatsMap!['SLEEPER_34'];
+    final layoutData =
+        _cachedSeatsMap![seatLayoutType] ?? _cachedSeatsMap!['SLEEPER_34'];
     return SeatLayoutModel.fromJson(layoutData as Map<String, dynamic>);
   }
 
@@ -59,8 +65,9 @@ class HybridSeatRepository implements SeatRepository {
   HybridSeatRepository({
     SeatRemoteDataSource? remoteDataSource,
     MockSeatRepository? mockFallback,
-  })  : remoteDataSource = remoteDataSource ?? SeatRemoteDataSourceImpl(client: ApiClient()),
-        mockFallback = mockFallback ?? MockSeatRepository();
+  }) : remoteDataSource =
+           remoteDataSource ?? SeatRemoteDataSourceImpl(client: ApiClient()),
+       mockFallback = mockFallback ?? MockSeatRepository();
 
   @override
   Future<SeatLayoutModel> getSeatLayout(String seatLayoutType) {
@@ -74,7 +81,9 @@ class HybridSeatRepository implements SeatRepository {
       if (seats.isNotEmpty) return seats;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridSeatRepository] Remote getTripSeats failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridSeatRepository] Remote getTripSeats failed, fallback to mock: $e',
+        );
       }
     }
     return mockFallback.getTripSeats(tripId);
@@ -86,10 +95,22 @@ class HybridSeatRepository implements SeatRepository {
     required List<int> seatIds,
   }) async {
     try {
-      return await remoteDataSource.createSeatHold(tripId: tripId, seatIds: seatIds);
+      return await remoteDataSource.createSeatHold(
+        tripId: tripId,
+        seatIds: seatIds,
+      );
+    } on ApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HybridSeatRepository] Server rejected hold (${e.statusCode}): ${e.message}',
+        );
+      }
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[HybridSeatRepository] Remote createSeatHold failed, fallback to mock: $e');
+        debugPrint(
+          '[HybridSeatRepository] Remote createSeatHold failed, fallback to mock: $e',
+        );
       }
       return mockFallback.createSeatHold(tripId: tripId, seatIds: seatIds);
     }

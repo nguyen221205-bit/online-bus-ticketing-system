@@ -12,7 +12,8 @@ import 'token_storage.dart';
 class ApiClient {
   final http.Client _httpClient;
 
-  ApiClient({http.Client? httpClient}) : _httpClient = httpClient ?? http.Client();
+  ApiClient({http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
 
   /// Build URI from path and optional query parameters
   Uri _buildUri(String path, [Map<String, dynamic>? queryParams]) {
@@ -64,7 +65,10 @@ class ApiClient {
     bool requiresAuth = false,
   }) async {
     final uri = _buildUri(path, queryParams);
-    final reqHeaders = await _buildHeaders(extraHeaders: headers, requiresAuth: requiresAuth);
+    final reqHeaders = await _buildHeaders(
+      extraHeaders: headers,
+      requiresAuth: requiresAuth,
+    );
 
     try {
       if (kDebugMode) {
@@ -101,7 +105,10 @@ class ApiClient {
     bool requiresAuth = false,
   }) async {
     final uri = _buildUri(path, queryParams);
-    final reqHeaders = await _buildHeaders(extraHeaders: headers, requiresAuth: requiresAuth);
+    final reqHeaders = await _buildHeaders(
+      extraHeaders: headers,
+      requiresAuth: requiresAuth,
+    );
 
     try {
       final encodedBody = body != null ? jsonEncode(body) : null;
@@ -139,7 +146,10 @@ class ApiClient {
     bool requiresAuth = false,
   }) async {
     final uri = _buildUri(path, queryParams);
-    final reqHeaders = await _buildHeaders(extraHeaders: headers, requiresAuth: requiresAuth);
+    final reqHeaders = await _buildHeaders(
+      extraHeaders: headers,
+      requiresAuth: requiresAuth,
+    );
 
     try {
       final encodedBody = body != null ? jsonEncode(body) : null;
@@ -156,10 +166,7 @@ class ApiClient {
         originalError: e,
       );
     } on TimeoutException catch (e) {
-      throw NetworkException(
-        message: 'Yêu cầu quá hạn.',
-        originalError: e,
-      );
+      throw NetworkException(message: 'Yêu cầu quá hạn.', originalError: e);
     } on http.ClientException catch (e) {
       throw NetworkException(
         message: 'Lỗi kết nối client: ${e.message}',
@@ -212,10 +219,12 @@ class ApiClient {
       throw ApiException(apiError);
     }
 
-    throw ApiException(ApiError(
-      statusCode: response.statusCode,
-      errorCode: 'HTTP_${response.statusCode}',
-      message: 'Lỗi máy chủ (${response.statusCode})',
-    ));
+    throw ApiException(
+      ApiError(
+        statusCode: response.statusCode,
+        errorCode: 'HTTP_${response.statusCode}',
+        message: 'Lỗi máy chủ (${response.statusCode})',
+      ),
+    );
   }
 }

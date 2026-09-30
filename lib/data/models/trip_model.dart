@@ -110,8 +110,14 @@ class TripModel extends Equatable {
     final routeId = json['routeId']?.toString();
 
     // Map operator/busCompany
-    String operatorId = json['busCompanyId']?.toString() ?? json['operatorId']?.toString() ?? '';
-    String operatorName = json['busCompanyName'] as String? ?? json['operatorName'] as String? ?? '';
+    String operatorId =
+        json['busCompanyId']?.toString() ??
+        json['operatorId']?.toString() ??
+        '';
+    String operatorName =
+        json['busCompanyName'] as String? ??
+        json['operatorName'] as String? ??
+        '';
     if (json['busCompany'] is Map<String, dynamic>) {
       final bc = json['busCompany'] as Map<String, dynamic>;
       if (operatorId.isEmpty) operatorId = bc['id']?.toString() ?? '';
@@ -119,12 +125,19 @@ class TripModel extends Equatable {
     }
 
     // Map vehicleType
-    final vehicleType = json['vehicleTypeName'] as String? ?? json['vehicleType'] as String? ?? '';
+    final vehicleType =
+        json['vehicleTypeName'] as String? ??
+        json['vehicleType'] as String? ??
+        '';
 
     // Map pricing: support single 'price' from backend or original/discount pair
     final backendPrice = (json['price'] as num?)?.toInt();
-    final originalPrice = (json['originalPrice'] as num?)?.toInt() ?? backendPrice ?? 0;
-    final discountPrice = (json['discountPrice'] as num?)?.toInt() ?? backendPrice ?? originalPrice;
+    final originalPrice =
+        (json['originalPrice'] as num?)?.toInt() ?? backendPrice ?? 0;
+    final discountPrice =
+        (json['discountPrice'] as num?)?.toInt() ??
+        backendPrice ??
+        originalPrice;
 
     return TripModel(
       id: id,
@@ -150,11 +163,13 @@ class TripModel extends Equatable {
       seatLayoutType: json['seatLayoutType'] as String? ?? 'SLEEPER_34',
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
-      amenities: (json['amenities'] as List<dynamic>?)
+      amenities:
+          (json['amenities'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
-      images: (json['images'] as List<dynamic>?)
+      images:
+          (json['images'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
@@ -206,5 +221,11 @@ class TripModel extends Equatable {
   String get busCompanyId => operatorId;
 
   @override
-  List<Object?> get props => [id, operatorId, departureTime, discountPrice, routeId];
+  List<Object?> get props => [
+    id,
+    operatorId,
+    departureTime,
+    discountPrice,
+    routeId,
+  ];
 }

@@ -55,10 +55,7 @@ class SeatItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: borderColor,
-            width: isSelected ? 2 : 1.2,
-          ),
+          border: Border.all(color: borderColor, width: isSelected ? 2 : 1.2),
           boxShadow: isSelected
               ? [
                   BoxShadow(
@@ -80,7 +77,9 @@ class SeatItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? Colors.white.withValues(alpha: 0.6)
-                    : (isBooked ? AppColors.neutral300 : AppColors.primaryLight),
+                    : (isBooked
+                          ? AppColors.neutral300
+                          : AppColors.primaryLight),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -90,11 +89,19 @@ class SeatItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (isBooked)
-                  const Icon(Icons.close_rounded, size: 13, color: AppColors.neutral400)
+                  const Icon(
+                    Icons.close_rounded,
+                    size: 13,
+                    color: AppColors.neutral400,
+                  )
                 else if (isSelected)
                   const Icon(Icons.check_rounded, size: 14, color: Colors.white)
                 else
-                  const Icon(Icons.airline_seat_recline_extra_rounded, size: 13, color: AppColors.primary),
+                  const Icon(
+                    Icons.airline_seat_recline_extra_rounded,
+                    size: 13,
+                    color: AppColors.primary,
+                  ),
                 const SizedBox(width: 2),
                 Text(
                   seat.name,

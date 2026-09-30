@@ -57,5 +57,12 @@ class PromotionValidationModel extends Equatable {
   };
 
   @override
-  List<Object?> get props => [code, isValid, discountAmount, discountPercent, description, reason];
+  List<Object?> get props => [
+    code,
+    isValid,
+    discountAmount,
+    discountPercent,
+    description,
+    reason,
+  ];
 }

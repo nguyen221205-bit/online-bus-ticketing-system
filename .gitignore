@@ -48,3 +48,7 @@ app.*.map.json
 .env*
 *.env
 
+# Project documentation & thesis PDFs
+TaiLieuLienQuan/
+*.pdf
+

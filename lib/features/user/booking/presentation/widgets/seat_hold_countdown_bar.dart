@@ -44,9 +44,7 @@ class SeatHoldCountdownBar extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: bgColor,
-        border: Border(
-          bottom: BorderSide(color: borderColor, width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: borderColor, width: 1)),
       ),
       child: Row(
         children: [
@@ -59,10 +57,14 @@ class SeatHoldCountdownBar extends StatelessWidget {
           Expanded(
             child: Text.rich(
               TextSpan(
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.neutral800),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.neutral800,
+                ),
                 children: [
                   TextSpan(
-                    text: isUrgent ? 'Sắp hết hạn giữ ghế$seatsText: ' : 'Ghế đang được giữ$seatsText: ',
+                    text: isUrgent
+                        ? 'Sắp hết hạn giữ ghế$seatsText: '
+                        : 'Ghế đang được giữ$seatsText: ',
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                   TextSpan(

@@ -7,15 +7,22 @@ import 'package:vexgo_app/data/models/ticket_model.dart';
 import 'package:vexgo_app/data/models/trip_model.dart';
 import 'package:vexgo_app/data/models/voucher_model.dart';
 
-enum BookingFlowStatus { initial, loading, loaded, submitting, success, failure }
+enum BookingFlowStatus {
+  initial,
+  loading,
+  loaded,
+  submitting,
+  success,
+  failure,
+}
 
 enum BookingStep {
-  seatSelection,   // 0: Chọn chỗ ngồi
-  pickupPoint,     // 1: Chọn điểm đón
-  dropoffPoint,    // 2: Chọn điểm trả
-  passengerInfo,   // 3: Nhập thông tin hành khách
-  tripSummary,     // 4: Thông tin chuyến đi & Voucher
-  payment,         // 5: Thanh toán
+  seatSelection, // 0: Chọn chỗ ngồi
+  pickupPoint, // 1: Chọn điểm đón
+  dropoffPoint, // 2: Chọn điểm trả
+  passengerInfo, // 3: Nhập thông tin hành khách
+  tripSummary, // 4: Thông tin chuyến đi & Voucher
+  payment, // 5: Thanh toán
 }
 
 extension BookingStepExtension on BookingStep {
@@ -119,7 +126,8 @@ class BookingFlowState extends Equatable {
 
     if (appliedVoucher!.discountPercent > 0) {
       final calc = (total * appliedVoucher!.discountPercent / 100).round();
-      if (appliedVoucher!.maxDiscount != null && appliedVoucher!.maxDiscount! > 0) {
+      if (appliedVoucher!.maxDiscount != null &&
+          appliedVoucher!.maxDiscount! > 0) {
         return min(calc, appliedVoucher!.maxDiscount!);
       }
       return calc;
@@ -197,18 +205,23 @@ class BookingFlowState extends Equatable {
       seatLayout: seatLayout ?? this.seatLayout,
       selectedFloor: selectedFloor ?? this.selectedFloor,
       selectedSeats: selectedSeats ?? this.selectedSeats,
-      availablePickupPoints: availablePickupPoints ?? this.availablePickupPoints,
+      availablePickupPoints:
+          availablePickupPoints ?? this.availablePickupPoints,
       selectedPickupPoint: selectedPickupPoint ?? this.selectedPickupPoint,
-      availableDropoffPoints: availableDropoffPoints ?? this.availableDropoffPoints,
+      availableDropoffPoints:
+          availableDropoffPoints ?? this.availableDropoffPoints,
       selectedDropoffPoint: selectedDropoffPoint ?? this.selectedDropoffPoint,
       passengerName: passengerName ?? this.passengerName,
       passengerPhone: passengerPhone ?? this.passengerPhone,
       passengerEmail: passengerEmail ?? this.passengerEmail,
       passengerNote: passengerNote ?? this.passengerNote,
       savePassengerInfo: savePassengerInfo ?? this.savePassengerInfo,
-      appliedVoucher: clearVoucher ? null : (appliedVoucher ?? this.appliedVoucher),
+      appliedVoucher: clearVoucher
+          ? null
+          : (appliedVoucher ?? this.appliedVoucher),
       availableVouchers: availableVouchers ?? this.availableVouchers,
-      selectedPaymentMethod: selectedPaymentMethod ?? this.selectedPaymentMethod,
+      selectedPaymentMethod:
+          selectedPaymentMethod ?? this.selectedPaymentMethod,
       countdownSeconds: countdownSeconds ?? this.countdownSeconds,
       seatHold: clearSeatHold ? null : (seatHold ?? this.seatHold),
       createdTicket: createdTicket ?? this.createdTicket,
@@ -218,25 +231,25 @@ class BookingFlowState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        step,
-        trip,
-        date,
-        seatLayout,
-        selectedFloor,
-        selectedSeats,
-        selectedPickupPoint,
-        selectedDropoffPoint,
-        passengerName,
-        passengerPhone,
-        passengerEmail,
-        passengerNote,
-        savePassengerInfo,
-        appliedVoucher,
-        selectedPaymentMethod,
-        countdownSeconds,
-        seatHold,
-        createdTicket,
-        errorMessage,
-      ];
+    status,
+    step,
+    trip,
+    date,
+    seatLayout,
+    selectedFloor,
+    selectedSeats,
+    selectedPickupPoint,
+    selectedDropoffPoint,
+    passengerName,
+    passengerPhone,
+    passengerEmail,
+    passengerNote,
+    savePassengerInfo,
+    appliedVoucher,
+    selectedPaymentMethod,
+    countdownSeconds,
+    seatHold,
+    createdTicket,
+    errorMessage,
+  ];
 }

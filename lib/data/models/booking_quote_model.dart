@@ -51,10 +51,13 @@ class BookingQuoteModel extends Equatable {
   factory BookingQuoteModel.fromJson(Map<String, dynamic> json) {
     final unitPrice = (json['unitPrice'] as num?)?.toInt() ?? 0;
     final seatCount = (json['seatCount'] as num?)?.toInt() ?? 0;
-    final originalTotal = (json['originalTotal'] as num?)?.toInt() ?? (unitPrice * seatCount);
+    final originalTotal =
+        (json['originalTotal'] as num?)?.toInt() ?? (unitPrice * seatCount);
     final discountAmount = (json['discountAmount'] as num?)?.toInt() ?? 0;
     final serviceFee = (json['serviceFee'] as num?)?.toInt() ?? 0;
-    final finalTotal = (json['finalTotal'] as num?)?.toInt() ?? (originalTotal - discountAmount + serviceFee);
+    final finalTotal =
+        (json['finalTotal'] as num?)?.toInt() ??
+        (originalTotal - discountAmount + serviceFee);
 
     return BookingQuoteModel(
       unitPrice: unitPrice,
@@ -64,7 +67,9 @@ class BookingQuoteModel extends Equatable {
       serviceFee: serviceFee,
       finalTotal: finalTotal,
       currency: json['currency'] as String? ?? 'VND',
-      appliedPromotionCode: json['appliedPromotionCode'] as String? ?? json['promotionCode'] as String?,
+      appliedPromotionCode:
+          json['appliedPromotionCode'] as String? ??
+          json['promotionCode'] as String?,
       promotionDescription: json['promotionDescription'] as String?,
     );
   }
@@ -77,19 +82,21 @@ class BookingQuoteModel extends Equatable {
     'serviceFee': serviceFee,
     'finalTotal': finalTotal,
     'currency': currency,
-    if (appliedPromotionCode != null) 'appliedPromotionCode': appliedPromotionCode,
-    if (promotionDescription != null) 'promotionDescription': promotionDescription,
+    if (appliedPromotionCode != null)
+      'appliedPromotionCode': appliedPromotionCode,
+    if (promotionDescription != null)
+      'promotionDescription': promotionDescription,
   };
 
   @override
   List<Object?> get props => [
-        unitPrice,
-        seatCount,
-        originalTotal,
-        discountAmount,
-        serviceFee,
-        finalTotal,
-        currency,
-        appliedPromotionCode,
-      ];
+    unitPrice,
+    seatCount,
+    originalTotal,
+    discountAmount,
+    serviceFee,
+    finalTotal,
+    currency,
+    appliedPromotionCode,
+  ];
 }

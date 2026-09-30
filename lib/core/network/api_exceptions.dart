@@ -21,7 +21,8 @@ class NetworkException implements Exception {
   final dynamic originalError;
 
   const NetworkException({
-    this.message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.',
+    this.message =
+        'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.',
     this.originalError,
   });
 
@@ -34,9 +35,5 @@ class UnauthorizedException extends ApiException {
   UnauthorizedException({
     String message = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
     String errorCode = 'UNAUTHORIZED',
-  }) : super(ApiError(
-          statusCode: 401,
-          errorCode: errorCode,
-          message: message,
-        ));
+  }) : super(ApiError(statusCode: 401, errorCode: errorCode, message: message));
 }

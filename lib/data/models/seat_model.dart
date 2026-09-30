@@ -62,11 +62,19 @@ class SeatModel extends Equatable {
 
     final id = json['seatId']?.toString() ?? json['id']?.toString() ?? '';
     final name = json['seatCode'] as String? ?? json['name'] as String? ?? '';
-    final status = parseStatus(json['status'] as String? ?? json['trangThai'] as String?);
-    final floor = (json['floor'] as num?)?.toInt() ?? (json['tang'] as num?)?.toInt() ?? 1;
-    final price = (json['price'] as num?)?.toInt() ?? (json['gia'] as num?)?.toInt() ?? 0;
-    final row = (json['row'] as num?)?.toInt() ?? (json['hang'] as num?)?.toInt() ?? 1;
-    final col = (json['col'] as num?)?.toInt() ?? (json['cot'] as num?)?.toInt() ?? 1;
+    final status = parseStatus(
+      json['status'] as String? ?? json['trangThai'] as String?,
+    );
+    final floor =
+        (json['floor'] as num?)?.toInt() ??
+        (json['tang'] as num?)?.toInt() ??
+        1;
+    final price =
+        (json['price'] as num?)?.toInt() ?? (json['gia'] as num?)?.toInt() ?? 0;
+    final row =
+        (json['row'] as num?)?.toInt() ?? (json['hang'] as num?)?.toInt() ?? 1;
+    final col =
+        (json['col'] as num?)?.toInt() ?? (json['cot'] as num?)?.toInt() ?? 1;
 
     return SeatModel(
       id: id,
@@ -119,11 +127,13 @@ class SeatLayoutModel extends Equatable {
     return SeatLayoutModel(
       vehicleType: json['vehicleType'] as String? ?? '',
       hasTwoFloors: json['hasTwoFloors'] as bool? ?? false,
-      lowerFloor: (json['lowerFloor'] as List<dynamic>?)
+      lowerFloor:
+          (json['lowerFloor'] as List<dynamic>?)
               ?.map((item) => SeatModel.fromJson(item as Map<String, dynamic>))
               .toList() ??
           const [],
-      upperFloor: (json['upperFloor'] as List<dynamic>?)
+      upperFloor:
+          (json['upperFloor'] as List<dynamic>?)
               ?.map((item) => SeatModel.fromJson(item as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -131,5 +141,10 @@ class SeatLayoutModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [vehicleType, hasTwoFloors, lowerFloor, upperFloor];
+  List<Object?> get props => [
+    vehicleType,
+    hasTwoFloors,
+    lowerFloor,
+    upperFloor,
+  ];
 }
