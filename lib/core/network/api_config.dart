@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 class ApiConfig {
   ApiConfig._();
 
-  /// Default local development port for NestJS backend (apps/api)
-  static const int defaultPort = 3000;
+  /// Default local development port for NestJS backend (apps/api) per rule-api.md
+  static const int defaultPort = 4000;
 
   /// Default Base URL logic:
   /// - Web / macOS / Windows / Linux: http://localhost:3000/api/v1
