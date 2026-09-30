@@ -176,7 +176,7 @@ void main() {
     bloc.add(const NextStepEvent());
     await expectLater(
       bloc.stream,
-      emits(predicate<BookingFlowState>((s) => s.step == BookingStep.pickupPoint)),
+      emitsThrough(predicate<BookingFlowState>((s) => s.step == BookingStep.pickupPoint)),
     );
 
     // Step 2 -> Step 3

@@ -17,6 +17,7 @@ import '../steps/step_5_trip_summary.dart';
 import '../steps/step_6_payment.dart';
 import '../widgets/booking_bottom_bar.dart';
 import '../widgets/booking_stepper.dart';
+import '../widgets/seat_hold_countdown_bar.dart';
 
 class BookingFlowScreen extends StatelessWidget {
   final TripModel trip;
@@ -34,8 +35,8 @@ class BookingFlowScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => BookingFlowBloc(
-        seatRepository: MockSeatRepository(),
-        bookingRepository: MockBookingRepository(),
+        seatRepository: context.read<SeatRepository>(),
+        bookingRepository: context.read<BookingRepository>(),
       )..add(InitBookingFlowEvent(
           trip: trip,
           date: date,
@@ -60,7 +61,7 @@ class _BookingFlowContent extends StatelessWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Thoát khỏi đặt vé?'),
         content: const Text(
-          'Bạn có chắc chắn muốn rời khỏi tiến trình đặt vé này không? Các vị trí ghế bạn chọn sẽ không được lưu.',
+          'Bạn có chắc chắn muốn rời khỏi tiến trình đặt vé này không? Vị trí ghế đang giữ sẽ được giải phóng cho người khác.',
         ),
         actions: [
           TextButton(
@@ -74,6 +75,10 @@ class _BookingFlowContent extends StatelessWidget {
         ],
       ),
     );
+
+    if (shouldExit == true) {
+      bloc.add(const ReleaseSeatHoldEvent());
+    }
 
     return shouldExit ?? false;
   }
@@ -90,13 +95,37 @@ class _BookingFlowContent extends StatelessWidget {
             extra: {'ticket': state.createdTicket},
           );
         } else if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          if (state.errorMessage!.contains('Hết thời gian') || state.errorMessage!.contains('hết hạn')) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Row(
+                  children: [
+                    Icon(Icons.timer_off_rounded, color: AppColors.error),
+                    SizedBox(width: 8),
+                    Text('Hết giờ giữ ghế'),
+                  ],
+                ),
+                content: const Text(
+                  'Thời gian giữ ghế tạm thời (10 phút) đã kết thúc. Vị trí ghế đã được giải phóng để nhường cho khách khác. Vui lòng chọn lại chỗ ngồi để tiếp tục.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Đã hiểu'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       },
       builder: (context, state) {
@@ -125,7 +154,7 @@ class _BookingFlowContent extends StatelessWidget {
                 },
               ),
             ),
-            body: state.status == BookingFlowStatus.loading
+            body: state.status == BookingFlowStatus.loading && state.seatLayout == null
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
                     children: [
@@ -134,6 +163,13 @@ class _BookingFlowContent extends StatelessWidget {
                         currentStep: state.step,
                         onStepTapped: (index) => bloc.add(GoToStepEvent(index)),
                       ),
+
+                      // Sticky Countdown Bar when holding seats
+                      if (state.seatHold != null && state.step != BookingStep.seatSelection)
+                        SeatHoldCountdownBar(
+                          remainingSeconds: state.countdownSeconds,
+                          seatCodes: state.selectedSeats.map((s) => s.name).toList(),
+                        ),
 
                       // Step View Container
                       Expanded(

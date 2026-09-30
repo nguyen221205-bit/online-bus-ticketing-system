@@ -32,6 +32,11 @@ class SeatLegend extends StatelessWidget {
             label: 'Đang chọn',
           ),
           _buildItem(
+            color: AppColors.warning.withValues(alpha: 0.2),
+            borderColor: AppColors.warning,
+            label: 'Đang giữ',
+          ),
+          _buildItem(
             color: AppColors.neutral200,
             borderColor: AppColors.neutral300,
             label: 'Đã bán',

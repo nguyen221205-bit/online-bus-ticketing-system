@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:vexgo_app/core/network/api_exceptions.dart';
 import 'package:vexgo_app/data/models/seat_model.dart';
 import 'package:vexgo_app/data/models/stop_point_model.dart';
 import 'package:vexgo_app/data/models/ticket_model.dart';
@@ -31,6 +32,7 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     on<PreviousStepEvent>(_onPreviousStep);
     on<GoToStepEvent>(_onGoToStep);
     on<ConfirmPaymentEvent>(_onConfirmPayment);
+    on<ReleaseSeatHoldEvent>(_onReleaseSeatHold);
   }
 
   Future<void> _onInit(
@@ -91,6 +93,11 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
   ) {
     if (event.seat.status == SeatStatus.booked || event.seat.status == SeatStatus.held) return;
 
+    if (state.seatHold != null) {
+      seatRepository.releaseSeatHold(state.seatHold!.holdToken);
+      _stopCountdown();
+    }
+
     final currentSelected = List<SeatModel>.from(state.selectedSeats);
     final exists = currentSelected.any((s) => s.id == event.seat.id);
 
@@ -98,6 +105,7 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
       currentSelected.removeWhere((s) => s.id == event.seat.id);
       emit(state.copyWith(
         selectedSeats: currentSelected,
+        clearSeatHold: state.seatHold != null,
         errorMessage: null,
       ));
     } else {
@@ -110,6 +118,7 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
       currentSelected.add(event.seat);
       emit(state.copyWith(
         selectedSeats: currentSelected,
+        clearSeatHold: state.seatHold != null,
         errorMessage: null,
       ));
     }
@@ -174,26 +183,85 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     TickCountdownEvent event,
     Emitter<BookingFlowState> emit,
   ) {
-    if (state.countdownSeconds > 0) {
+    if (state.countdownSeconds > 1) {
       emit(state.copyWith(countdownSeconds: state.countdownSeconds - 1));
+    } else {
+      _stopCountdown();
+      emit(state.copyWith(
+        countdownSeconds: 0,
+        status: BookingFlowStatus.failure,
+        errorMessage: 'Hết thời gian giữ ghế. Vui lòng chọn lại chỗ ngồi.',
+        step: BookingStep.seatSelection,
+        clearSeatHold: true,
+      ));
     }
   }
 
-  void _onNextStep(
+  Future<void> _onNextStep(
     NextStepEvent event,
     Emitter<BookingFlowState> emit,
-  ) {
+  ) async {
     if (!state.canProceed) return;
+
+    // Moving from seatSelection: reserve seats via SeatHold API
+    if (state.step == BookingStep.seatSelection && state.seatHold == null) {
+      final tripId = state.trip?.numericTripId ?? int.tryParse(state.trip?.id ?? '') ?? 0;
+      final seatIds = state.selectedSeats
+          .map((s) => s.numericSeatId ?? int.tryParse(s.id) ?? 0)
+          .toList();
+
+      emit(state.copyWith(status: BookingFlowStatus.loading));
+      try {
+        final hold = await seatRepository.createSeatHold(
+          tripId: tripId,
+          seatIds: seatIds,
+        );
+        emit(state.copyWith(
+          status: BookingFlowStatus.loaded,
+          seatHold: hold,
+          countdownSeconds: hold.remainingSeconds > 0 ? hold.remainingSeconds : 600,
+          step: BookingStep.pickupPoint,
+          errorMessage: null,
+        ));
+        _startCountdown();
+        return;
+      } on ApiException catch (e) {
+        emit(state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: e.message,
+        ));
+        if (state.trip != null) {
+          final refreshed = await seatRepository.getSeatLayout(state.trip!.seatLayoutType);
+          emit(state.copyWith(seatLayout: refreshed));
+        }
+        return;
+      } catch (e) {
+        emit(state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: 'Không thể giữ chỗ ngồi này. Vui lòng thử lại.',
+        ));
+        return;
+      }
+    }
 
     final nextIndex = state.step.index + 1;
     if (nextIndex < BookingStep.values.length) {
       final nextStep = BookingStep.values[nextIndex];
       emit(state.copyWith(step: nextStep, errorMessage: null));
-
-      if (nextStep == BookingStep.payment) {
-        _startCountdown();
-      }
     }
+  }
+
+  Future<void> _onReleaseSeatHold(
+    ReleaseSeatHoldEvent event,
+    Emitter<BookingFlowState> emit,
+  ) async {
+    if (state.seatHold != null) {
+      try {
+        await seatRepository.releaseSeatHold(state.seatHold!.holdToken);
+      } catch (_) {}
+    }
+    _stopCountdown();
+    emit(state.copyWith(clearSeatHold: true, countdownSeconds: 600));
   }
 
   void _onPreviousStep(
@@ -305,6 +373,9 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
   @override
   Future<void> close() {
     _stopCountdown();
+    if (state.seatHold != null && state.createdTicket == null) {
+      seatRepository.releaseSeatHold(state.seatHold!.holdToken);
+    }
     return super.close();
   }
 }

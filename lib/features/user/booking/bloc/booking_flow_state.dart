@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:equatable/equatable.dart';
+import 'package:vexgo_app/data/models/seat_hold_model.dart';
 import 'package:vexgo_app/data/models/seat_model.dart';
 import 'package:vexgo_app/data/models/stop_point_model.dart';
 import 'package:vexgo_app/data/models/ticket_model.dart';
@@ -77,6 +78,7 @@ class BookingFlowState extends Equatable {
   final List<VoucherModel> availableVouchers;
   final String selectedPaymentMethod;
   final int countdownSeconds;
+  final SeatHoldModel? seatHold;
   final TicketModel? createdTicket;
   final String? errorMessage;
 
@@ -102,6 +104,7 @@ class BookingFlowState extends Equatable {
     this.availableVouchers = const [],
     this.selectedPaymentMethod = 'momo',
     this.countdownSeconds = 600,
+    this.seatHold,
     this.createdTicket,
     this.errorMessage,
   });
@@ -180,6 +183,8 @@ class BookingFlowState extends Equatable {
     List<VoucherModel>? availableVouchers,
     String? selectedPaymentMethod,
     int? countdownSeconds,
+    SeatHoldModel? seatHold,
+    bool clearSeatHold = false,
     TicketModel? createdTicket,
     String? errorMessage,
   }) {
@@ -205,6 +210,7 @@ class BookingFlowState extends Equatable {
       availableVouchers: availableVouchers ?? this.availableVouchers,
       selectedPaymentMethod: selectedPaymentMethod ?? this.selectedPaymentMethod,
       countdownSeconds: countdownSeconds ?? this.countdownSeconds,
+      seatHold: clearSeatHold ? null : (seatHold ?? this.seatHold),
       createdTicket: createdTicket ?? this.createdTicket,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -229,6 +235,7 @@ class BookingFlowState extends Equatable {
         appliedVoucher,
         selectedPaymentMethod,
         countdownSeconds,
+        seatHold,
         createdTicket,
         errorMessage,
       ];
