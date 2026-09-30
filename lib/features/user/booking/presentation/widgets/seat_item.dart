@@ -18,6 +18,8 @@ class SeatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBooked = seat.status == SeatStatus.booked;
+    final isHeld = seat.status == SeatStatus.held;
+    final isDisabled = isBooked || isHeld;
 
     Color bgColor = Colors.white;
     Color borderColor = AppColors.neutral300;
@@ -29,6 +31,11 @@ class SeatItem extends StatelessWidget {
       borderColor = AppColors.neutral300;
       textColor = AppColors.neutral400;
       priceColor = AppColors.neutral400;
+    } else if (isHeld) {
+      bgColor = AppColors.warning.withValues(alpha: 0.12);
+      borderColor = AppColors.warning.withValues(alpha: 0.4);
+      textColor = AppColors.warning;
+      priceColor = AppColors.warning;
     } else if (isSelected) {
       bgColor = AppColors.primary;
       borderColor = AppColors.primary;
@@ -40,7 +47,7 @@ class SeatItem extends StatelessWidget {
     final priceShort = '${seat.price ~/ 1000}k';
 
     return GestureDetector(
-      onTap: isBooked ? null : onTap,
+      onTap: isDisabled ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeInOut,

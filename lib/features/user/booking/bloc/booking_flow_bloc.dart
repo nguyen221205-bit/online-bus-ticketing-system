@@ -89,7 +89,7 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     ToggleSeatEvent event,
     Emitter<BookingFlowState> emit,
   ) {
-    if (event.seat.status == SeatStatus.booked) return;
+    if (event.seat.status == SeatStatus.booked || event.seat.status == SeatStatus.held) return;
 
     final currentSelected = List<SeatModel>.from(state.selectedSeats);
     final exists = currentSelected.any((s) => s.id == event.seat.id);

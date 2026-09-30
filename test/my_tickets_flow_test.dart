@@ -11,19 +11,26 @@ void main() {
   group('MyTicketsBloc & Business Rules Tests', () {
     late MyTicketsBloc bloc;
 
+    final now = DateTime.now();
+    final futureDate = now.add(const Duration(days: 5));
+    final futureDateStr = '${futureDate.day.toString().padLeft(2, '0')}/${futureDate.month.toString().padLeft(2, '0')}/${futureDate.year}';
+    final urgentDate = now.add(const Duration(hours: 1));
+    final urgentDateStr = '${urgentDate.day.toString().padLeft(2, '0')}/${urgentDate.month.toString().padLeft(2, '0')}/${urgentDate.year}';
+    final urgentTimeStr = '${urgentDate.hour.toString().padLeft(2, '0')}:${urgentDate.minute.toString().padLeft(2, '0')}';
+
     final sampleTicketFuture = TicketModel(
       id: 'TKT_TEST_FUTURE',
       ticketCode: 'VXG-999001',
       status: TicketStatus.upcoming,
       bookingDate: '24/09/2026 10:00',
-      trip: const TicketTripSummary(
+      trip: TicketTripSummary(
         id: 'TRIP_001',
         operatorName: 'Phương Trang (FUTA Bus Lines)',
         vehicleType: 'Limousine 34 Phòng VIP',
         departureTime: '23:30',
-        departureDate: '28/09/2026', // Way in the future (> 3h)
+        departureDate: futureDateStr, // Way in the future (> 3h)
         arrivalTime: '06:00',
-        arrivalDate: '29/09/2026',
+        arrivalDate: futureDateStr,
         fromCity: 'TP. Hồ Chí Minh',
         toCity: 'Đà Lạt',
         pickupPoint: 'Bến xe Miền Đông mới',
@@ -48,14 +55,14 @@ void main() {
       ticketCode: 'VXG-999002',
       status: TicketStatus.upcoming,
       bookingDate: '24/09/2026 19:00',
-      trip: const TicketTripSummary(
+      trip: TicketTripSummary(
         id: 'TRIP_002',
         operatorName: 'Thành Bưởi Limousine',
         vehicleType: 'Cabin 22 VIP',
-        departureTime: '21:00',
-        departureDate: '24/09/2026', // Under 3h from now
+        departureTime: urgentTimeStr,
+        departureDate: urgentDateStr, // Under 3h from now
         arrivalTime: '03:00',
-        arrivalDate: '25/09/2026',
+        arrivalDate: urgentDateStr,
         fromCity: 'TP. Hồ Chí Minh',
         toCity: 'Cần Thơ',
         pickupPoint: 'Bến xe Miền Tây',

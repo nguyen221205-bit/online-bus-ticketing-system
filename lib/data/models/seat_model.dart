@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum SeatStatus { available, booked, selected }
+enum SeatStatus { available, booked, selected, held }
 
 class SeatModel extends Equatable {
   final String id;
@@ -45,35 +45,58 @@ class SeatModel extends Equatable {
     SeatStatus parseStatus(String? statusStr) {
       switch (statusStr?.toUpperCase()) {
         case 'BOOKED':
+        case 'DA_DAT':
           return SeatStatus.booked;
+        case 'HELD':
+        case 'HOLD':
+        case 'DANG_GIU':
+          return SeatStatus.held;
         case 'SELECTED':
           return SeatStatus.selected;
         case 'AVAILABLE':
+        case 'TRONG':
         default:
           return SeatStatus.available;
       }
     }
 
+    final id = json['seatId']?.toString() ?? json['id']?.toString() ?? '';
+    final name = json['seatCode'] as String? ?? json['name'] as String? ?? '';
+    final status = parseStatus(json['status'] as String? ?? json['trangThai'] as String?);
+    final floor = (json['floor'] as num?)?.toInt() ?? (json['tang'] as num?)?.toInt() ?? 1;
+    final price = (json['price'] as num?)?.toInt() ?? (json['gia'] as num?)?.toInt() ?? 0;
+    final row = (json['row'] as num?)?.toInt() ?? (json['hang'] as num?)?.toInt() ?? 1;
+    final col = (json['col'] as num?)?.toInt() ?? (json['cot'] as num?)?.toInt() ?? 1;
+
     return SeatModel(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      floor: json['floor'] as int? ?? 1,
-      status: parseStatus(json['status'] as String?),
-      price: json['price'] as int? ?? 0,
-      row: json['row'] as int? ?? 1,
-      col: json['col'] as int? ?? 1,
+      id: id,
+      name: name,
+      floor: floor,
+      status: status,
+      price: price,
+      row: row,
+      col: col,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'seatId': numericSeatId,
     'name': name,
+    'seatCode': name,
     'floor': floor,
     'status': status.name.toUpperCase(),
     'price': price,
     'row': row,
     'col': col,
   };
+
+  /// Helper getters
+  int? get numericSeatId => int.tryParse(id);
+  bool get isAvailable => status == SeatStatus.available;
+  bool get isBooked => status == SeatStatus.booked;
+  bool get isHeld => status == SeatStatus.held;
+  bool get isSelected => status == SeatStatus.selected;
 
   @override
   List<Object?> get props => [id, name, floor, status, price, row, col];

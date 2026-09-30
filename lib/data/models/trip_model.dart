@@ -3,6 +3,7 @@ import 'stop_point_model.dart';
 
 class TripModel extends Equatable {
   final String id;
+  final String? routeId;
   final String operatorId;
   final String operatorName;
   final String vehicleType;
@@ -31,6 +32,7 @@ class TripModel extends Equatable {
 
   const TripModel({
     required this.id,
+    this.routeId,
     required this.operatorId,
     required this.operatorName,
     required this.vehicleType,
@@ -104,14 +106,35 @@ class TripModel extends Equatable {
       ];
     }
 
+    final id = json['tripId']?.toString() ?? json['id']?.toString() ?? '';
+    final routeId = json['routeId']?.toString();
+
+    // Map operator/busCompany
+    String operatorId = json['busCompanyId']?.toString() ?? json['operatorId']?.toString() ?? '';
+    String operatorName = json['busCompanyName'] as String? ?? json['operatorName'] as String? ?? '';
+    if (json['busCompany'] is Map<String, dynamic>) {
+      final bc = json['busCompany'] as Map<String, dynamic>;
+      if (operatorId.isEmpty) operatorId = bc['id']?.toString() ?? '';
+      if (operatorName.isEmpty) operatorName = bc['name'] as String? ?? '';
+    }
+
+    // Map vehicleType
+    final vehicleType = json['vehicleTypeName'] as String? ?? json['vehicleType'] as String? ?? '';
+
+    // Map pricing: support single 'price' from backend or original/discount pair
+    final backendPrice = (json['price'] as num?)?.toInt();
+    final originalPrice = (json['originalPrice'] as num?)?.toInt() ?? backendPrice ?? 0;
+    final discountPrice = (json['discountPrice'] as num?)?.toInt() ?? backendPrice ?? originalPrice;
+
     return TripModel(
-      id: json['id'] as String? ?? '',
-      operatorId: json['operatorId'] as String? ?? '',
-      operatorName: json['operatorName'] as String? ?? '',
-      vehicleType: json['vehicleType'] as String? ?? '',
-      fromCityId: json['fromCityId'] as String? ?? '',
+      id: id,
+      routeId: routeId,
+      operatorId: operatorId,
+      operatorName: operatorName,
+      vehicleType: vehicleType,
+      fromCityId: json['fromCityId']?.toString() ?? '',
       fromCityName: json['fromCityName'] as String? ?? '',
-      toCityId: json['toCityId'] as String? ?? '',
+      toCityId: json['toCityId']?.toString() ?? '',
       toCityName: json['toCityName'] as String? ?? '',
       departureTime: departureTime,
       arrivalTime: arrivalTime,
@@ -120,8 +143,8 @@ class TripModel extends Equatable {
       pickupAddress: defaultPickupAddress,
       dropoffPoint: defaultDropoff,
       dropoffAddress: defaultDropoffAddress,
-      originalPrice: json['originalPrice'] as int? ?? 0,
-      discountPrice: json['discountPrice'] as int? ?? 0,
+      originalPrice: originalPrice,
+      discountPrice: discountPrice,
       availableSeats: json['availableSeats'] as int? ?? 0,
       totalSeats: json['totalSeats'] as int? ?? 0,
       seatLayoutType: json['seatLayoutType'] as String? ?? 'SLEEPER_34',
@@ -142,9 +165,14 @@ class TripModel extends Equatable {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'tripId': numericTripId,
+    'routeId': routeId,
     'operatorId': operatorId,
     'operatorName': operatorName,
+    'busCompanyId': numericOperatorId,
+    'busCompanyName': operatorName,
     'vehicleType': vehicleType,
+    'vehicleTypeName': vehicleType,
     'fromCityId': fromCityId,
     'fromCityName': fromCityName,
     'toCityId': toCityId,
@@ -156,6 +184,7 @@ class TripModel extends Equatable {
     'pickupAddress': pickupAddress,
     'dropoffPoint': dropoffPoint,
     'dropoffAddress': dropoffAddress,
+    'price': discountPrice,
     'originalPrice': originalPrice,
     'discountPrice': discountPrice,
     'availableSeats': availableSeats,
@@ -169,6 +198,13 @@ class TripModel extends Equatable {
     'dropoffPoints': dropoffPoints.map((p) => p.toJson()).toList(),
   };
 
+  /// Helper getters for backend numeric IDs
+  int? get numericTripId => int.tryParse(id);
+  int? get numericOperatorId => int.tryParse(operatorId);
+  int? get numericRouteId => routeId != null ? int.tryParse(routeId!) : null;
+  String get busCompanyName => operatorName;
+  String get busCompanyId => operatorId;
+
   @override
-  List<Object?> get props => [id, operatorId, departureTime, discountPrice];
+  List<Object?> get props => [id, operatorId, departureTime, discountPrice, routeId];
 }
