@@ -1,4 +1,7 @@
-import 'package:vexgo_app/core/utils/json_loader.dart';
+import 'package:flutter/foundation.dart';
+import '../../core/network/api_client.dart';
+import '../../core/utils/json_loader.dart';
+import '../datasources/remote/trip_remote_data_source.dart';
 import '../models/city_model.dart';
 import '../models/operator_model.dart';
 import '../models/popular_route_model.dart';
@@ -86,5 +89,66 @@ class MockTripRepository implements TripRepository {
     } catch (_) {
       return null;
     }
+  }
+}
+
+/// Hybrid repository: queries live backend API with seamless mock fallback
+class HybridTripRepository implements TripRepository {
+  final TripRemoteDataSource remoteDataSource;
+  final MockTripRepository mockFallback;
+
+  HybridTripRepository({
+    TripRemoteDataSource? remoteDataSource,
+    MockTripRepository? mockFallback,
+  })  : remoteDataSource = remoteDataSource ?? TripRemoteDataSourceImpl(client: ApiClient()),
+        mockFallback = mockFallback ?? MockTripRepository();
+
+  @override
+  Future<List<CityModel>> getCities() => mockFallback.getCities();
+
+  @override
+  Future<List<PopularRouteModel>> getPopularRoutes() => mockFallback.getPopularRoutes();
+
+  @override
+  Future<List<OperatorModel>> getOperators() => mockFallback.getOperators();
+
+  @override
+  Future<List<TripModel>> searchTrips({
+    required String fromCityId,
+    required String toCityId,
+    String? date,
+  }) async {
+    try {
+      final remoteTrips = await remoteDataSource.searchTrips(
+        from: fromCityId,
+        to: toCityId,
+        departureDate: date,
+      );
+      if (remoteTrips.isNotEmpty) {
+        return remoteTrips;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridTripRepository] Remote search failed, fallback to mock: $e');
+      }
+    }
+    return mockFallback.searchTrips(
+      fromCityId: fromCityId,
+      toCityId: toCityId,
+      date: date,
+    );
+  }
+
+  @override
+  Future<TripModel?> getTripById(String id) async {
+    try {
+      final trip = await remoteDataSource.getTripById(id);
+      return trip;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridTripRepository] Remote getTripById failed, fallback to mock: $e');
+      }
+    }
+    return mockFallback.getTripById(id);
   }
 }

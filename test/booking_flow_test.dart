@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vexgo_app/data/models/seat_hold_model.dart';
 import 'package:vexgo_app/data/models/seat_model.dart';
 import 'package:vexgo_app/data/models/stop_point_model.dart';
 import 'package:vexgo_app/data/models/trip_model.dart';
@@ -25,6 +26,25 @@ class FakeSeatRepository implements SeatRepository {
       ],
     );
   }
+
+  @override
+  Future<List<SeatModel>> getTripSeats(dynamic tripId) async {
+    final layout = await getSeatLayout('Limousine 34 Phòng VIP');
+    return [...layout.lowerFloor, ...layout.upperFloor];
+  }
+
+  @override
+  Future<SeatHoldModel> createSeatHold({required int tripId, required List<int> seatIds}) async {
+    return SeatHoldModel(
+      holdToken: 'test_hold_token',
+      tripId: tripId,
+      seatIds: seatIds,
+      expiresAt: DateTime.now().add(const Duration(minutes: 10)),
+    );
+  }
+
+  @override
+  Future<bool> releaseSeatHold(String holdToken) async => true;
 }
 
 void main() {
