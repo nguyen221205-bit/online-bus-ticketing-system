@@ -6,6 +6,7 @@ import 'package:vexgo_app/data/datasources/remote/seat_remote_data_source.dart';
 import 'package:vexgo_app/data/models/seat_hold_model.dart';
 import 'package:vexgo_app/data/models/seat_model.dart';
 import 'package:vexgo_app/data/models/stop_point_model.dart';
+import 'package:vexgo_app/data/models/ticket_model.dart';
 import 'package:vexgo_app/data/models/trip_model.dart';
 import 'package:vexgo_app/data/repositories/booking_repository.dart';
 import 'package:vexgo_app/data/repositories/seat_repository.dart';
@@ -103,6 +104,42 @@ class MockSeatRepositoryWithHoldSpy implements SeatRepository {
   Future<bool> releaseSeatHold(String holdToken) async {
     holdReleased = true;
     return true;
+  }
+}
+
+class SpyBookingRepository extends MockBookingRepository {
+  List<int>? lastSeatIds;
+  String? lastHoldToken;
+  String? lastPromotionCode;
+
+  @override
+  Future<TicketModel> createBooking({
+    required TicketTripSummary trip,
+    required List<String> seats,
+    required int totalAmount,
+    required int discountAmount,
+    required int finalAmount,
+    required String paymentMethod,
+    required PassengerInfo passenger,
+    List<int>? seatIds,
+    String? holdToken,
+    String? promotionCode,
+  }) async {
+    lastSeatIds = seatIds;
+    lastHoldToken = holdToken;
+    lastPromotionCode = promotionCode;
+    return super.createBooking(
+      trip: trip,
+      seats: seats,
+      totalAmount: totalAmount,
+      discountAmount: discountAmount,
+      finalAmount: finalAmount,
+      paymentMethod: paymentMethod,
+      passenger: passenger,
+      seatIds: seatIds,
+      holdToken: holdToken,
+      promotionCode: promotionCode,
+    );
   }
 }
 
@@ -382,6 +419,150 @@ void main() {
             isA<ApiException>().having((e) => e.statusCode, 'statusCode', 409),
           ),
         );
+      },
+    );
+
+    test(
+      'Regression: SeatHoldModel.fromJson enforces strict contract validation',
+      () {
+        // Missing or empty holdToken
+        expect(
+          () => SeatHoldModel.fromJson({
+            'tripId': 101,
+            'seatIds': [1, 2],
+            'expiresAt': '2026-10-01T12:00:00Z',
+          }),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('holdToken is required'),
+            ),
+          ),
+        );
+
+        expect(
+          () => SeatHoldModel.fromJson({
+            'holdToken': '   ',
+            'tripId': 101,
+            'seatIds': [1, 2],
+            'expiresAt': '2026-10-01T12:00:00Z',
+          }),
+          throwsA(isA<FormatException>()),
+        );
+
+        // Missing or invalid tripId
+        expect(
+          () => SeatHoldModel.fromJson({
+            'holdToken': 'token_abc',
+            'tripId': 0,
+            'seatIds': [1, 2],
+            'expiresAt': '2026-10-01T12:00:00Z',
+          }),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('tripId must be a positive integer'),
+            ),
+          ),
+        );
+
+        // Missing or empty seatIds
+        expect(
+          () => SeatHoldModel.fromJson({
+            'holdToken': 'token_abc',
+            'tripId': 101,
+            'seatIds': [],
+            'expiresAt': '2026-10-01T12:00:00Z',
+          }),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('seatIds must be a non-empty list'),
+            ),
+          ),
+        );
+
+        // Missing or invalid expiresAt
+        expect(
+          () => SeatHoldModel.fromJson({
+            'holdToken': 'token_abc',
+            'tripId': 101,
+            'seatIds': [1, 2],
+            'expiresAt': 'not-a-valid-date',
+          }),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('expiresAt has invalid datetime format'),
+            ),
+          ),
+        );
+
+        // Valid payload parses successfully
+        final valid = SeatHoldModel.fromJson({
+          'holdToken': 'valid_token_xyz',
+          'tripId': 101,
+          'seatIds': [10, 11],
+          'expiresAt': '2026-10-01T12:00:00Z',
+        });
+        expect(valid.holdToken, equals('valid_token_xyz'));
+        expect(valid.tripId, equals(101));
+        expect(valid.seatIds, equals([10, 11]));
+      },
+    );
+
+    test(
+      'Regression: BookingFlowBloc propagates holdToken and numeric seatIds to createBooking',
+      () async {
+        final spyBookingRepo = SpyBookingRepository();
+        final testBloc = BookingFlowBloc(
+          bookingRepository: spyBookingRepo,
+          seatRepository: seatRepo,
+        );
+
+        testBloc.add(
+          InitBookingFlowEvent(trip: testTrip, date: DateTime(2026, 10, 1)),
+        );
+        await testBloc.stream.firstWhere(
+          (s) => s.status == BookingFlowStatus.loaded,
+        );
+
+        const seat = SeatModel(
+          id: '10',
+          name: 'A01',
+          floor: 1,
+          status: SeatStatus.available,
+          price: 290000,
+          row: 1,
+          col: 1,
+        );
+        testBloc.add(const ToggleSeatEvent(seat));
+        await testBloc.stream.firstWhere((s) => s.selectedSeats.isNotEmpty);
+
+        // Advance to reserve seats -> creates seatHold
+        testBloc.add(const NextStepEvent());
+        await testBloc.stream.firstWhere((s) => s.seatHold != null);
+
+        expect(
+          testBloc.state.seatHold!.holdToken,
+          equals('spy_hold_token_123'),
+        );
+
+        // Confirm booking
+        testBloc.add(const ConfirmPaymentEvent());
+        await testBloc.stream.firstWhere(
+          (s) => s.status == BookingFlowStatus.success,
+        );
+
+        // Verify that createBooking received the exact holdToken and numeric seatIds
+        expect(spyBookingRepo.lastHoldToken, equals('spy_hold_token_123'));
+        expect(spyBookingRepo.lastSeatIds, equals([10]));
+
+        testBloc.close();
       },
     );
 

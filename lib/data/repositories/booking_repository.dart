@@ -24,6 +24,9 @@ abstract class BookingRepository {
     required int finalAmount,
     required String paymentMethod,
     required PassengerInfo passenger,
+    List<int>? seatIds,
+    String? holdToken,
+    String? promotionCode,
   });
 
   // Person B Commerce & Fulfillment methods
@@ -116,6 +119,9 @@ class MockBookingRepository implements BookingRepository {
     required int finalAmount,
     required String paymentMethod,
     required PassengerInfo passenger,
+    List<int>? seatIds,
+    String? holdToken,
+    String? promotionCode,
   }) async {
     final tickets = await getMyTickets();
     final newCode = 'VXG-${100000 + tickets.length * 123 + 45}';
@@ -318,17 +324,33 @@ class HybridBookingRepository implements BookingRepository {
     required int finalAmount,
     required String paymentMethod,
     required PassengerInfo passenger,
+    List<int>? seatIds,
+    String? holdToken,
+    String? promotionCode,
   }) async {
-    try {
-      final tripId = int.tryParse(trip.id) ?? 1;
-      final seatIds = seats.map((s) => int.tryParse(s) ?? 0).toList();
+    final tripId = int.tryParse(trip.id);
+    if (tripId == null || tripId <= 0) {
+      throw ArgumentError('Mã chuyến đi không hợp lệ (${trip.id})');
+    }
 
+    final resolvedSeatIds =
+        seatIds ?? seats.map((s) => int.tryParse(s)).whereType<int>().toList();
+
+    if (resolvedSeatIds.length != seats.length ||
+        resolvedSeatIds.isEmpty ||
+        resolvedSeatIds.any((id) => id <= 0)) {
+      throw ArgumentError('Danh sách ghế không hợp lệ ($seats)');
+    }
+
+    try {
       final booking = await remoteBookingDataSource.createBooking(
         tripId: tripId,
-        seatIds: seatIds,
+        seatIds: resolvedSeatIds,
         pickupPoint: trip.pickupPoint,
         dropoffPoint: trip.dropoffPoint,
         contact: passenger,
+        holdToken: holdToken,
+        promotionCode: promotionCode,
       );
 
       // Create payment transaction in MySQL
@@ -367,19 +389,9 @@ class HybridBookingRepository implements BookingRepository {
       return newTicket;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridBookingRepository] Remote booking failed, falling back to mock: $e',
-        );
+        debugPrint('[HybridBookingRepository] Remote booking failed: $e');
       }
-      return mockFallback.createBooking(
-        trip: trip,
-        seats: seats,
-        totalAmount: totalAmount,
-        discountAmount: discountAmount,
-        finalAmount: finalAmount,
-        paymentMethod: paymentMethod,
-        passenger: passenger,
-      );
+      rethrow;
     }
   }
 
@@ -448,6 +460,12 @@ class HybridBookingRepository implements BookingRepository {
     String? promotionCode,
     String? holdToken,
   }) async {
+    if (tripId <= 0) {
+      throw ArgumentError('Mã chuyến đi không hợp lệ ($tripId)');
+    }
+    if (seatIds.isEmpty || seatIds.any((id) => id <= 0)) {
+      throw ArgumentError('Danh sách ghế không hợp lệ ($seatIds)');
+    }
     try {
       return await remoteBookingDataSource.createBooking(
         tripId: tripId,
@@ -461,18 +479,10 @@ class HybridBookingRepository implements BookingRepository {
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-          '[HybridBookingRepository] Remote create booking failed, fallback to mock: $e',
+          '[HybridBookingRepository] Remote create booking failed: $e',
         );
       }
-      return mockFallback.createApiBooking(
-        tripId: tripId,
-        seatIds: seatIds,
-        pickupPoint: pickupPoint,
-        dropoffPoint: dropoffPoint,
-        contact: contact,
-        promotionCode: promotionCode,
-        holdToken: holdToken,
-      );
+      rethrow;
     }
   }
 
@@ -489,13 +499,10 @@ class HybridBookingRepository implements BookingRepository {
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-          '[HybridBookingRepository] Remote create payment failed, fallback to mock: $e',
+          '[HybridBookingRepository] Remote create payment failed: $e',
         );
       }
-      return mockFallback.createPayment(
-        bookingId: bookingId,
-        provider: provider,
-      );
+      rethrow;
     }
   }
 
@@ -506,10 +513,10 @@ class HybridBookingRepository implements BookingRepository {
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-          '[HybridBookingRepository] Remote get payment status failed, fallback to mock: $e',
+          '[HybridBookingRepository] Remote get payment status failed: $e',
         );
       }
-      return mockFallback.getPaymentStatus(paymentId);
+      rethrow;
     }
   }
 }

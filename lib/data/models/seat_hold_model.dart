@@ -37,15 +37,61 @@ class SeatHoldModel extends Equatable {
   }
 
   factory SeatHoldModel.fromJson(Map<String, dynamic> json) {
-    // Parse seatIds
-    List<int> parsedSeatIds = [];
-    if (json['seatIds'] is List) {
-      parsedSeatIds = (json['seatIds'] as List)
-          .map((e) => (e as num).toInt())
-          .toList();
+    // 1. Strict holdToken
+    final rawHoldToken = json['holdToken'];
+    if (rawHoldToken == null ||
+        rawHoldToken is! String ||
+        rawHoldToken.trim().isEmpty) {
+      throw const FormatException(
+        'SeatHoldModel contract violation: holdToken is required and cannot be empty',
+      );
+    }
+    final holdToken = rawHoldToken.trim();
+
+    // 2. Strict tripId
+    final rawTripId = json['tripId'];
+    final tripId = (rawTripId is num)
+        ? rawTripId.toInt()
+        : (rawTripId is String ? int.tryParse(rawTripId) : null);
+    if (tripId == null || tripId <= 0) {
+      throw const FormatException(
+        'SeatHoldModel contract violation: tripId must be a positive integer',
+      );
     }
 
-    // Parse seatCodes if provided
+    // 3. Strict seatIds
+    final rawSeatIds = json['seatIds'];
+    if (rawSeatIds is! List || rawSeatIds.isEmpty) {
+      throw const FormatException(
+        'SeatHoldModel contract violation: seatIds must be a non-empty list',
+      );
+    }
+    final parsedSeatIds = rawSeatIds
+        .map((e) => (e is num) ? e.toInt() : int.tryParse(e.toString()))
+        .whereType<int>()
+        .toList();
+    if (parsedSeatIds.length != rawSeatIds.length ||
+        parsedSeatIds.any((id) => id <= 0)) {
+      throw const FormatException(
+        'SeatHoldModel contract violation: seatIds must contain valid positive integers',
+      );
+    }
+
+    // 4. Strict expiresAt
+    final rawExpiresAt = json['expiresAt'];
+    if (rawExpiresAt is! String) {
+      throw const FormatException(
+        'SeatHoldModel contract violation: expiresAt is required as ISO-8601 string',
+      );
+    }
+    final parsedExpiresAt = DateTime.tryParse(rawExpiresAt);
+    if (parsedExpiresAt == null) {
+      throw FormatException(
+        'SeatHoldModel contract violation: expiresAt has invalid datetime format ($rawExpiresAt)',
+      );
+    }
+
+    // Optional fields
     List<String> parsedSeatCodes = [];
     if (json['seatCodes'] is List) {
       parsedSeatCodes = (json['seatCodes'] as List)
@@ -57,24 +103,14 @@ class SeatHoldModel extends Equatable {
           .toList();
     }
 
-    // Parse dates
-    DateTime parsedExpiresAt;
-    if (json['expiresAt'] is String) {
-      parsedExpiresAt =
-          DateTime.tryParse(json['expiresAt'] as String) ??
-          DateTime.now().add(const Duration(minutes: 10));
-    } else {
-      parsedExpiresAt = DateTime.now().add(const Duration(minutes: 10));
-    }
-
     DateTime? parsedCreatedAt;
     if (json['createdAt'] is String) {
       parsedCreatedAt = DateTime.tryParse(json['createdAt'] as String);
     }
 
     return SeatHoldModel(
-      holdToken: json['holdToken'] as String? ?? '',
-      tripId: (json['tripId'] as num?)?.toInt() ?? 0,
+      holdToken: holdToken,
+      tripId: tripId,
       seatIds: parsedSeatIds,
       seatCodes: parsedSeatCodes,
       expiresAt: parsedExpiresAt,

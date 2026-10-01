@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
-import '../../core/network/api_exceptions.dart';
 import '../../core/utils/json_loader.dart';
 import '../datasources/remote/seat_remote_data_source.dart';
 import '../models/seat_hold_model.dart';
@@ -99,20 +98,11 @@ class HybridSeatRepository implements SeatRepository {
         tripId: tripId,
         seatIds: seatIds,
       );
-    } on ApiException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-          '[HybridSeatRepository] Server rejected hold (${e.statusCode}): ${e.message}',
-        );
-      }
-      rethrow;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridSeatRepository] Remote createSeatHold failed, fallback to mock: $e',
-        );
+        debugPrint('[HybridSeatRepository] Remote createSeatHold failed: $e');
       }
-      return mockFallback.createSeatHold(tripId: tripId, seatIds: seatIds);
+      rethrow;
     }
   }
 
@@ -124,7 +114,7 @@ class HybridSeatRepository implements SeatRepository {
       if (kDebugMode) {
         debugPrint('[HybridSeatRepository] Remote releaseSeatHold failed: $e');
       }
-      return mockFallback.releaseSeatHold(holdToken);
+      return false;
     }
   }
 }

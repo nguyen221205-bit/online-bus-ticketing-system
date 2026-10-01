@@ -22,7 +22,12 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    TokenStorage.setStorageAdapterForTesting(InMemorySecureStorageAdapter());
     ApiConfig.resetBaseUrl();
+  });
+
+  tearDown(() {
+    TokenStorage.resetStorageAdapter();
   });
 
   group('Task 2: Network Client & Data Sources Tests', () {
@@ -418,69 +423,161 @@ void main() {
         },
       );
 
-      test('HybridSeatRepository falls back to Mock on error', () async {
-        final failingClient = MockClient((request) async {
-          throw http.ClientException('Server down');
-        });
+      test(
+        'HybridSeatRepository rethrows NetworkException and NEVER falls back to mock',
+        () async {
+          final failingClient = MockClient((request) async {
+            throw http.ClientException('Server down');
+          });
 
-        final hybridRepo = HybridSeatRepository(
-          remoteDataSource: SeatRemoteDataSourceImpl(
-            client: ApiClient(httpClient: failingClient),
-          ),
-          mockFallback: MockSeatRepository(),
-        );
+          final hybridRepo = HybridSeatRepository(
+            remoteDataSource: SeatRemoteDataSourceImpl(
+              client: ApiClient(httpClient: failingClient),
+            ),
+            mockFallback: MockSeatRepository(),
+          );
 
-        final hold = await hybridRepo.createSeatHold(
-          tripId: 101,
-          seatIds: [10, 11],
-        );
-        expect(hold.holdToken, contains('mock-hold'));
-        expect(hold.seatIds, equals([10, 11]));
-      });
+          expect(
+            () => hybridRepo.createSeatHold(tripId: 101, seatIds: [10, 11]),
+            throwsA(isA<NetworkException>()),
+          );
+        },
+      );
 
-      test('HybridBookingRepository falls back to Mock on error', () async {
-        final failingClient = MockClient((request) async {
-          throw http.ClientException('Server down');
-        });
+      test(
+        'HybridBookingRepository rethrows NetworkException and NEVER falls back to mock for booking/payment',
+        () async {
+          final failingClient = MockClient((request) async {
+            throw http.ClientException('Server down');
+          });
 
-        final hybridRepo = HybridBookingRepository(
-          remoteBookingDataSource: BookingRemoteDataSourceImpl(
-            client: ApiClient(httpClient: failingClient),
-          ),
-          remotePaymentDataSource: PaymentRemoteDataSourceImpl(
-            client: ApiClient(httpClient: failingClient),
-          ),
-          mockFallback: MockBookingRepository(),
-        );
+          final hybridRepo = HybridBookingRepository(
+            remoteBookingDataSource: BookingRemoteDataSourceImpl(
+              client: ApiClient(httpClient: failingClient),
+            ),
+            remotePaymentDataSource: PaymentRemoteDataSourceImpl(
+              client: ApiClient(httpClient: failingClient),
+            ),
+            mockFallback: MockBookingRepository(),
+          );
 
-        final quote = await hybridRepo.getBookingQuote(
-          tripId: 101,
-          seatIds: [10, 11],
-        );
-        expect(quote.finalTotal, greaterThan(0));
+          // Pricing quote may use fallback preview
+          final quote = await hybridRepo.getBookingQuote(
+            tripId: 101,
+            seatIds: [10, 11],
+          );
+          expect(quote.finalTotal, greaterThan(0));
 
-        final promo = await hybridRepo.validatePromotion(
-          code: 'VEXGO50',
-          tripId: 101,
-          seatCount: 2,
-          totalAmount: 500000,
-        );
-        expect(promo.isValid, isTrue);
+          // Real booking mutation must throw and NEVER fake success
+          expect(
+            () => hybridRepo.createApiBooking(
+              tripId: 101,
+              seatIds: [10, 11],
+              pickupPoint: 'Bến xe',
+              dropoffPoint: 'Bến xe',
+              contact: const PassengerInfo(
+                fullName: 'An',
+                phone: '0901',
+                email: 'an@test.com',
+              ),
+            ),
+            throwsA(isA<NetworkException>()),
+          );
 
-        final booking = await hybridRepo.createApiBooking(
-          tripId: 101,
-          seatIds: [10, 11],
-          pickupPoint: 'Bến xe',
-          dropoffPoint: 'Bến xe',
-          contact: const PassengerInfo(
+          // Payment mutations must throw and NEVER fake SUCCESS
+          expect(
+            () => hybridRepo.createPayment(bookingId: 999, provider: 'MOMO'),
+            throwsA(isA<NetworkException>()),
+          );
+
+          expect(
+            () => hybridRepo.getPaymentStatus(555),
+            throwsA(isA<NetworkException>()),
+          );
+        },
+      );
+
+      test(
+        'HybridBookingRepository.createBooking rejects invalid trip.id and non-numeric seats with ArgumentError',
+        () async {
+          final hybridRepo = HybridBookingRepository(
+            remoteBookingDataSource: BookingRemoteDataSourceImpl(
+              client: ApiClient(),
+            ),
+            remotePaymentDataSource: PaymentRemoteDataSourceImpl(
+              client: ApiClient(),
+            ),
+            mockFallback: MockBookingRepository(),
+          );
+
+          const invalidTrip = TicketTripSummary(
+            id: 'invalid_trip_string',
+            operatorName: 'Test',
+            vehicleType: 'Limousine',
+            departureTime: '23:00',
+            departureDate: '01/10/2026',
+            arrivalTime: '06:00',
+            arrivalDate: '02/10/2026',
+            fromCity: 'HCM',
+            toCity: 'DL',
+            pickupPoint: 'BX',
+            pickupAddress: 'BX',
+            dropoffPoint: 'BX',
+            dropoffAddress: 'BX',
+          );
+
+          const validTrip = TicketTripSummary(
+            id: '101',
+            operatorName: 'Test',
+            vehicleType: 'Limousine',
+            departureTime: '23:00',
+            departureDate: '01/10/2026',
+            arrivalTime: '06:00',
+            arrivalDate: '02/10/2026',
+            fromCity: 'HCM',
+            toCity: 'DL',
+            pickupPoint: 'BX',
+            pickupAddress: 'BX',
+            dropoffPoint: 'BX',
+            dropoffAddress: 'BX',
+          );
+
+          const passenger = PassengerInfo(
             fullName: 'An',
             phone: '0901',
             email: 'an@test.com',
-          ),
-        );
-        expect(booking.bookingId, greaterThan(0));
-        expect(booking.isPending, isTrue);
-      });
+          );
+
+          // Invalid trip.id cannot silently become tripId 1
+          expect(
+            () => hybridRepo.createBooking(
+              trip: invalidTrip,
+              seats: ['10'],
+              seatIds: [10],
+              totalAmount: 290000,
+              discountAmount: 0,
+              finalAmount: 290000,
+              paymentMethod: 'momo',
+              passenger: passenger,
+            ),
+            throwsA(isA<ArgumentError>()),
+          );
+
+          // Seat names like 'A01' without numeric mapping cannot silently become seatId 0
+          expect(
+            () => hybridRepo.createBooking(
+              trip: validTrip,
+              seats: ['A01'],
+              totalAmount: 290000,
+              discountAmount: 0,
+              finalAmount: 290000,
+              paymentMethod: 'momo',
+              passenger: passenger,
+            ),
+            throwsA(isA<ArgumentError>()),
+          );
+        },
+      );
     });
   });
 }

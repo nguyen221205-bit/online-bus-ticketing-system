@@ -18,7 +18,7 @@ class FakeSeatRepository implements SeatRepository {
       hasTwoFloors: true,
       lowerFloor: [
         SeatModel(
-          id: 'A01',
+          id: '1',
           name: 'A01',
           floor: 1,
           status: SeatStatus.available,
@@ -27,7 +27,7 @@ class FakeSeatRepository implements SeatRepository {
           col: 1,
         ),
         SeatModel(
-          id: 'A02',
+          id: '2',
           name: 'A02',
           floor: 1,
           status: SeatStatus.available,
@@ -36,7 +36,7 @@ class FakeSeatRepository implements SeatRepository {
           col: 2,
         ),
         SeatModel(
-          id: 'A03',
+          id: '3',
           name: 'A03',
           floor: 1,
           status: SeatStatus.booked,
@@ -47,7 +47,7 @@ class FakeSeatRepository implements SeatRepository {
       ],
       upperFloor: [
         SeatModel(
-          id: 'B01',
+          id: '4',
           name: 'B01',
           floor: 2,
           status: SeatStatus.available,
@@ -88,7 +88,7 @@ void main() {
   late FakeSeatRepository seatRepository;
 
   final testTrip = TripModel(
-    id: 'TRIP_TEST',
+    id: '101',
     operatorId: 'OP_FUTA',
     operatorName: 'Phương Trang',
     vehicleType: 'Limousine 34 Phòng VIP',
@@ -189,7 +189,7 @@ void main() {
 
       // Booked seat cannot be selected
       const bookedSeat = SeatModel(
-        id: 'A03',
+        id: '3',
         name: 'A03',
         floor: 1,
         status: SeatStatus.booked,
@@ -202,7 +202,7 @@ void main() {
 
       // Available seat can be selected
       const seatA1 = SeatModel(
-        id: 'A01',
+        id: '1',
         name: 'A01',
         floor: 1,
         status: SeatStatus.available,
@@ -239,7 +239,7 @@ void main() {
 
     // Select seat
     const seatA1 = SeatModel(
-      id: 'A01',
+      id: '1',
       name: 'A01',
       floor: 1,
       status: SeatStatus.available,
@@ -308,7 +308,7 @@ void main() {
     await bloc.stream.firstWhere((s) => s.status == BookingFlowStatus.loaded);
 
     const seatA1 = SeatModel(
-      id: 'A01',
+      id: '1',
       name: 'A01',
       floor: 1,
       status: SeatStatus.available,

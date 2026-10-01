@@ -113,7 +113,10 @@ class ApiClient {
     try {
       final encodedBody = body != null ? jsonEncode(body) : null;
       if (kDebugMode) {
-        debugPrint('[API POST] $uri | body: $encodedBody');
+        final payloadSize = encodedBody != null
+            ? ' (${encodedBody.length} bytes)'
+            : '';
+        debugPrint('[API POST] $uri$payloadSize');
       }
       final response = await _httpClient
           .post(uri, headers: reqHeaders, body: encodedBody)
@@ -194,7 +197,8 @@ class ApiClient {
     }
 
     if (kDebugMode) {
-      debugPrint('[API RES] ${response.statusCode} | body: $decodedBody');
+      final size = response.contentLength ?? decodedBody.length;
+      debugPrint('[API RES] ${response.statusCode} | ($size bytes)');
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {

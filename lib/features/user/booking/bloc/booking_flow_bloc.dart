@@ -245,10 +245,31 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     // Moving from seatSelection: reserve seats via SeatHold API
     if (state.step == BookingStep.seatSelection && state.seatHold == null) {
       final tripId =
-          state.trip?.numericTripId ?? int.tryParse(state.trip?.id ?? '') ?? 0;
+          state.trip?.numericTripId ?? int.tryParse(state.trip?.id ?? '');
+      if (tripId == null || tripId <= 0) {
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.failure,
+            errorMessage: 'Thông tin chuyến đi không hợp lệ.',
+          ),
+        );
+        return;
+      }
+
       final seatIds = state.selectedSeats
-          .map((s) => s.numericSeatId ?? int.tryParse(s.id) ?? 0)
+          .map((s) => s.numericSeatId ?? int.tryParse(s.id))
+          .whereType<int>()
           .toList();
+
+      if (seatIds.length != state.selectedSeats.length || seatIds.isEmpty) {
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.failure,
+            errorMessage: 'Danh sách ghế không hợp lệ.',
+          ),
+        );
+        return;
+      }
 
       emit(state.copyWith(status: BookingFlowStatus.loading));
       try {
@@ -395,10 +416,30 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
       );
 
       final seatNames = state.selectedSeats.map((s) => s.name).toList();
+      final seatIds = state.selectedSeats
+          .map((s) => s.numericSeatId ?? int.tryParse(s.id))
+          .whereType<int>()
+          .toList();
+
+      if (seatIds.length != state.selectedSeats.length || seatIds.isEmpty) {
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.failure,
+            errorMessage:
+                'Danh sách ghế không hợp lệ. Vui lòng chọn lại chỗ ngồi.',
+          ),
+        );
+        return;
+      }
+
+      final holdToken = state.seatHold?.holdToken;
 
       final createdTicket = await bookingRepository.createBooking(
         trip: summary,
         seats: seatNames,
+        seatIds: seatIds,
+        holdToken: holdToken,
+        promotionCode: state.appliedVoucher?.code,
         totalAmount: state.seatsTotalAmount,
         discountAmount: state.discountAmount,
         finalAmount: state.finalAmount,
