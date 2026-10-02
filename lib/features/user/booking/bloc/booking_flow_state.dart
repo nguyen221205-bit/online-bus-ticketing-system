@@ -13,6 +13,7 @@ enum BookingFlowStatus {
   loaded,
   submitting,
   success,
+  paymentPending,
   failure,
 }
 
@@ -88,6 +89,11 @@ class BookingFlowState extends Equatable {
   final SeatHoldModel? seatHold;
   final TicketModel? createdTicket;
   final String? errorMessage;
+  final int? pendingBookingId;
+  final int? pendingPaymentId;
+  final String? pendingPaymentUrl;
+  final String? pendingQrCodeUrl;
+  final String? pendingDeeplink;
 
   const BookingFlowState({
     this.status = BookingFlowStatus.initial,
@@ -114,6 +120,11 @@ class BookingFlowState extends Equatable {
     this.seatHold,
     this.createdTicket,
     this.errorMessage,
+    this.pendingBookingId,
+    this.pendingPaymentId,
+    this.pendingPaymentUrl,
+    this.pendingQrCodeUrl,
+    this.pendingDeeplink,
   });
 
   int get seatsTotalAmount =>
@@ -195,6 +206,12 @@ class BookingFlowState extends Equatable {
     bool clearSeatHold = false,
     TicketModel? createdTicket,
     String? errorMessage,
+    int? pendingBookingId,
+    int? pendingPaymentId,
+    String? pendingPaymentUrl,
+    String? pendingQrCodeUrl,
+    String? pendingDeeplink,
+    bool clearPendingPayment = false,
   }) {
     return BookingFlowState(
       status: status ?? this.status,
@@ -226,6 +243,21 @@ class BookingFlowState extends Equatable {
       seatHold: clearSeatHold ? null : (seatHold ?? this.seatHold),
       createdTicket: createdTicket ?? this.createdTicket,
       errorMessage: errorMessage ?? this.errorMessage,
+      pendingBookingId: clearPendingPayment
+          ? null
+          : (pendingBookingId ?? this.pendingBookingId),
+      pendingPaymentId: clearPendingPayment
+          ? null
+          : (pendingPaymentId ?? this.pendingPaymentId),
+      pendingPaymentUrl: clearPendingPayment
+          ? null
+          : (pendingPaymentUrl ?? this.pendingPaymentUrl),
+      pendingQrCodeUrl: clearPendingPayment
+          ? null
+          : (pendingQrCodeUrl ?? this.pendingQrCodeUrl),
+      pendingDeeplink: clearPendingPayment
+          ? null
+          : (pendingDeeplink ?? this.pendingDeeplink),
     );
   }
 
@@ -251,5 +283,10 @@ class BookingFlowState extends Equatable {
     seatHold,
     createdTicket,
     errorMessage,
+    pendingBookingId,
+    pendingPaymentId,
+    pendingPaymentUrl,
+    pendingQrCodeUrl,
+    pendingDeeplink,
   ];
 }

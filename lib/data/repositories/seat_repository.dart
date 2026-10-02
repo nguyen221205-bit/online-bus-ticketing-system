@@ -90,16 +90,13 @@ class HybridSeatRepository implements SeatRepository {
   @override
   Future<List<SeatModel>> getTripSeats(dynamic tripId) async {
     try {
-      final seats = await remoteDataSource.getTripSeats(tripId);
-      if (seats.isNotEmpty) return seats;
+      return await remoteDataSource.getTripSeats(tripId);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridSeatRepository] Remote getTripSeats failed, fallback to mock: $e',
-        );
+        debugPrint('[HybridSeatRepository] Remote getTripSeats failed: $e');
       }
+      rethrow;
     }
-    return mockFallback.getTripSeats(tripId);
   }
 
   @override

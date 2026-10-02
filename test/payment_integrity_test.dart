@@ -165,17 +165,22 @@ void main() {
       expect(PaymentProviderMapper.toBackendProvider('jcb'), equals('VNPAY'));
       expect(PaymentProviderMapper.toBackendProvider('vnpay'), equals('VNPAY'));
 
-      // Fallbacks & Cash
-      expect(PaymentProviderMapper.toBackendProvider('cash'), equals('CASH'));
+      // Fail closed: reject unknown, typos, empty, null
       expect(
-        PaymentProviderMapper.toBackendProvider('tien_mat'),
-        equals('CASH'),
+        () => PaymentProviderMapper.toBackendProvider(''),
+        throwsArgumentError,
       );
-      expect(PaymentProviderMapper.toBackendProvider(''), equals('VNPAY'));
-      expect(PaymentProviderMapper.toBackendProvider(null), equals('VNPAY'));
       expect(
-        PaymentProviderMapper.toBackendProvider('unknown_gateway'),
-        equals('VNPAY'),
+        () => PaymentProviderMapper.toBackendProvider(null),
+        throwsArgumentError,
+      );
+      expect(
+        () => PaymentProviderMapper.toBackendProvider('momoo'),
+        throwsArgumentError,
+      );
+      expect(
+        () => PaymentProviderMapper.toBackendProvider('unknown_gateway'),
+        throwsArgumentError,
       );
     });
 

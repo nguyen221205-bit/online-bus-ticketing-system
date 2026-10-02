@@ -277,13 +277,21 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
           tripId: tripId,
           seatIds: seatIds,
         );
+        if (hold.remainingSeconds <= 0) {
+          emit(
+            state.copyWith(
+              status: BookingFlowStatus.failure,
+              errorMessage:
+                  'Thời gian giữ chỗ đã hết hạn. Vui lòng chọn lại ghế.',
+            ),
+          );
+          return;
+        }
         emit(
           state.copyWith(
             status: BookingFlowStatus.loaded,
             seatHold: hold,
-            countdownSeconds: hold.remainingSeconds > 0
-                ? hold.remainingSeconds
-                : 600,
+            countdownSeconds: hold.remainingSeconds,
             step: BookingStep.pickupPoint,
             errorMessage: null,
           ),
@@ -387,6 +395,53 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
     // Simulate safe payment gateway processing delay
     await Future.delayed(const Duration(milliseconds: 1200));
 
+    // If there is an existing pending payment, poll its status and NEVER create a duplicate booking
+    if (state.pendingPaymentId != null) {
+      try {
+        final paymentStatus = await bookingRepository.getPaymentStatus(
+          state.pendingPaymentId!,
+        );
+        if (paymentStatus.isSuccess) {
+          _stopCountdown();
+          emit(
+            state.copyWith(
+              status: BookingFlowStatus.success,
+              clearPendingPayment: true,
+            ),
+          );
+          return;
+        } else if (paymentStatus.isPending) {
+          emit(
+            state.copyWith(
+              status: BookingFlowStatus.paymentPending,
+              errorMessage:
+                  'Giao dịch thanh toán đang chờ xử lý. Vui lòng hoàn tất thanh toán.',
+            ),
+          );
+          return;
+        } else {
+          emit(
+            state.copyWith(
+              status: BookingFlowStatus.failure,
+              clearPendingPayment: true,
+              errorMessage:
+                  paymentStatus.failureReason ??
+                  'Giao dịch thanh toán thất bại.',
+            ),
+          );
+          return;
+        }
+      } catch (e) {
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.failure,
+            errorMessage: 'Không thể kiểm tra trạng thái thanh toán: $e',
+          ),
+        );
+        return;
+      }
+    }
+
     try {
       final date = state.date ?? DateTime.now();
       final dateFormatted =
@@ -453,19 +508,25 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         state.copyWith(
           status: BookingFlowStatus.success,
           createdTicket: createdTicket,
+          clearPendingPayment: true,
         ),
       );
     } on PaymentFailedException catch (e) {
       emit(
         state.copyWith(
           status: BookingFlowStatus.failure,
+          clearPendingPayment: true,
           errorMessage: e.message,
         ),
       );
     } on PaymentPendingException catch (e) {
       emit(
         state.copyWith(
-          status: BookingFlowStatus.failure,
+          status: BookingFlowStatus.paymentPending,
+          pendingPaymentId: e.paymentId,
+          pendingPaymentUrl: e.paymentUrl,
+          pendingQrCodeUrl: e.qrCodeUrl,
+          pendingDeeplink: e.deeplink,
           errorMessage: e.message,
         ),
       );

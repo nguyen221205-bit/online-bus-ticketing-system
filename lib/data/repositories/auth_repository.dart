@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import '../../core/network/api_client.dart';
+import '../datasources/remote/auth_remote_data_source.dart';
 import 'package:vexgo_app/core/utils/json_loader.dart';
 import '../models/point_transaction_model.dart';
 import '../models/user_model.dart';
@@ -147,4 +150,90 @@ class MockAuthRepository implements AuthRepository {
     await Future.delayed(const Duration(milliseconds: 300));
     _currentUser = null;
   }
+}
+
+class HybridAuthRepository implements AuthRepository {
+  final AuthRemoteDataSource remoteDataSource;
+  final MockAuthRepository mockFallback;
+
+  HybridAuthRepository({
+    AuthRemoteDataSource? remoteDataSource,
+    MockAuthRepository? mockFallback,
+  }) : remoteDataSource =
+           remoteDataSource ?? AuthRemoteDataSourceImpl(client: ApiClient()),
+       mockFallback = mockFallback ?? MockAuthRepository();
+
+  @override
+  Future<UserModel?> getCurrentUser() async {
+    try {
+      final user = await remoteDataSource.getCurrentUser();
+      if (user != null) return user;
+    } catch (_) {}
+    return null;
+  }
+
+  @override
+  Future<UserModel> login({
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      return await remoteDataSource.login(phone: phone, password: password);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridAuthRepository] Remote login failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> sendOtp({required String phone}) async {
+    try {
+      await remoteDataSource.sendOtp(phone: phone);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridAuthRepository] Remote sendOtp failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserModel> verifyOtpAndRegister({
+    required String phone,
+    required String otp,
+    required String fullName,
+    required String password,
+  }) async {
+    try {
+      return await remoteDataSource.verifyOtpAndRegister(
+        phone: phone,
+        otp: otp,
+        fullName: fullName,
+        password: password,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridAuthRepository] Remote register failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserModel> updateProfile(UserModel updatedUser) =>
+      mockFallback.updateProfile(updatedUser);
+
+  @override
+  Future<UserModel> redeemPoints({
+    required int pointsToRedeem,
+    required String rewardTitle,
+  }) => mockFallback.redeemPoints(
+    pointsToRedeem: pointsToRedeem,
+    rewardTitle: rewardTitle,
+  );
+
+  @override
+  Future<void> logout() => remoteDataSource.logout();
 }

@@ -130,40 +130,28 @@ class HybridTripRepository implements TripRepository {
     String? date,
   }) async {
     try {
-      final remoteTrips = await remoteDataSource.searchTrips(
+      return await remoteDataSource.searchTrips(
         from: fromCityId,
         to: toCityId,
         departureDate: date,
       );
-      if (remoteTrips.isNotEmpty) {
-        return remoteTrips;
-      }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridTripRepository] Remote search failed, fallback to mock: $e',
-        );
+        debugPrint('[HybridTripRepository] Remote search failed: $e');
       }
+      rethrow;
     }
-    return mockFallback.searchTrips(
-      fromCityId: fromCityId,
-      toCityId: toCityId,
-      date: date,
-    );
   }
 
   @override
   Future<TripModel?> getTripById(String id) async {
     try {
-      final trip = await remoteDataSource.getTripById(id);
-      return trip;
+      return await remoteDataSource.getTripById(id);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridTripRepository] Remote getTripById failed, fallback to mock: $e',
-        );
+        debugPrint('[HybridTripRepository] Remote getTripById failed: $e');
       }
+      rethrow;
     }
-    return mockFallback.getTripById(id);
   }
 }

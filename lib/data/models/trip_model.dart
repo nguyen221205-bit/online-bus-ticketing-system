@@ -106,8 +106,15 @@ class TripModel extends Equatable {
       ];
     }
 
+    final routeMap = json['route'] is Map<String, dynamic>
+        ? json['route'] as Map<String, dynamic>
+        : null;
+    final vehicleMap = json['vehicle'] is Map<String, dynamic>
+        ? json['vehicle'] as Map<String, dynamic>
+        : null;
+
     final id = json['tripId']?.toString() ?? json['id']?.toString() ?? '';
-    final routeId = json['routeId']?.toString();
+    final routeId = json['routeId']?.toString() ?? routeMap?['id']?.toString();
 
     // Map operator/busCompany
     String operatorId =
@@ -124,11 +131,37 @@ class TripModel extends Equatable {
       if (operatorName.isEmpty) operatorName = bc['name'] as String? ?? '';
     }
 
-    // Map vehicleType
+    // Map vehicle details
     final vehicleType =
         json['vehicleTypeName'] as String? ??
         json['vehicleType'] as String? ??
+        vehicleMap?['type'] as String? ??
         '';
+    final totalSeats =
+        (json['totalSeats'] as num?)?.toInt() ??
+        (vehicleMap?['capacity'] as num?)?.toInt() ??
+        0;
+
+    // Map route points
+    final fromCityName =
+        json['fromCityName'] as String? ?? routeMap?['origin'] as String? ?? '';
+    final toCityName =
+        json['toCityName'] as String? ??
+        routeMap?['destination'] as String? ??
+        '';
+    final fromCityId =
+        json['fromCityId']?.toString() ??
+        routeMap?['originId']?.toString() ??
+        fromCityName;
+    final toCityId =
+        json['toCityId']?.toString() ??
+        routeMap?['destinationId']?.toString() ??
+        toCityName;
+
+    String duration = json['duration'] as String? ?? '';
+    if (duration.isEmpty && routeMap?['durationHours'] != null) {
+      duration = '${routeMap!['durationHours']} giờ';
+    }
 
     // Map pricing: support single 'price' from backend or original/discount pair
     final backendPrice = (json['price'] as num?)?.toInt();
@@ -139,19 +172,28 @@ class TripModel extends Equatable {
         backendPrice ??
         originalPrice;
 
+    final amenities =
+        (json['amenities'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        (vehicleMap?['amenities'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [];
+
     return TripModel(
       id: id,
       routeId: routeId,
       operatorId: operatorId,
       operatorName: operatorName,
       vehicleType: vehicleType,
-      fromCityId: json['fromCityId']?.toString() ?? '',
-      fromCityName: json['fromCityName'] as String? ?? '',
-      toCityId: json['toCityId']?.toString() ?? '',
-      toCityName: json['toCityName'] as String? ?? '',
+      fromCityId: fromCityId,
+      fromCityName: fromCityName,
+      toCityId: toCityId,
+      toCityName: toCityName,
       departureTime: departureTime,
       arrivalTime: arrivalTime,
-      duration: json['duration'] as String? ?? '',
+      duration: duration,
       pickupPoint: defaultPickup,
       pickupAddress: defaultPickupAddress,
       dropoffPoint: defaultDropoff,
@@ -159,15 +201,11 @@ class TripModel extends Equatable {
       originalPrice: originalPrice,
       discountPrice: discountPrice,
       availableSeats: json['availableSeats'] as int? ?? 0,
-      totalSeats: json['totalSeats'] as int? ?? 0,
+      totalSeats: totalSeats,
       seatLayoutType: json['seatLayoutType'] as String? ?? 'SLEEPER_34',
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
-      amenities:
-          (json['amenities'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const [],
+      amenities: amenities,
       images:
           (json['images'] as List<dynamic>?)
               ?.map((e) => e.toString())

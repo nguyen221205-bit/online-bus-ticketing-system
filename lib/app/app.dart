@@ -31,7 +31,7 @@ class VexGoApp extends StatelessWidget {
           create: (context) => HybridBookingRepository(),
         ),
         RepositoryProvider<AuthRepository>(
-          create: (context) => MockAuthRepository(),
+          create: (context) => HybridAuthRepository(),
         ),
         RepositoryProvider<NotificationRepository>(
           create: (context) => MockNotificationRepository(),

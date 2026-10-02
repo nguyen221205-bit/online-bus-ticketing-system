@@ -3,12 +3,17 @@
 /// Supported backend providers per endpoint-api.md 5.7 & MySQL enum:
 /// - MOMO
 /// - ZALOPAY
-/// - VNPAY (handles VietQR, domestic ATM Napas, international cards Visa/Mastercard)
+/// - VNPAY (handles VietQR, domestic ATM Napas, international cards Visa/Mastercard/JCB)
 abstract class PaymentProviderMapper {
+  /// Canonical whitelist of supported backend payment providers
+  static const Set<String> supportedProviders = {'MOMO', 'ZALOPAY', 'VNPAY'};
+
   /// Converts UI payment method identifier to uppercase backend provider string.
+  ///
+  /// Fails closed (throws [ArgumentError]) if [uiMethod] is null, empty, or unknown.
   static String toBackendProvider(String? uiMethod) {
     if (uiMethod == null || uiMethod.trim().isEmpty) {
-      return 'VNPAY';
+      throw ArgumentError('Phương thức thanh toán không được để trống.');
     }
 
     final normalized = uiMethod.trim().toLowerCase();
@@ -21,23 +26,29 @@ abstract class PaymentProviderMapper {
       case 'vietqr':
       case 'napas':
       case 'visa':
-      case 'vnpay':
       case 'mastercard':
       case 'jcb':
+      case 'vnpay':
         return 'VNPAY';
-      case 'cash':
-      case 'tien_mat':
-        return 'CASH';
       default:
-        // If already uppercase backend provider
         final upper = uiMethod.trim().toUpperCase();
-        if (upper == 'MOMO' ||
-            upper == 'ZALOPAY' ||
-            upper == 'VNPAY' ||
-            upper == 'CASH') {
+        if (supportedProviders.contains(upper)) {
           return upper;
         }
-        return 'VNPAY';
+        throw ArgumentError(
+          'Phương thức thanh toán "$uiMethod" không hợp lệ hoặc không được hỗ trợ.',
+        );
+    }
+  }
+
+  /// Checks if a payment method identifier is supported
+  static bool isSupported(String? uiMethod) {
+    if (uiMethod == null || uiMethod.trim().isEmpty) return false;
+    try {
+      toBackendProvider(uiMethod);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }

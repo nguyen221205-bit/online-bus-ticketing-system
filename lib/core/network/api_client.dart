@@ -35,19 +35,30 @@ class ApiClient {
     return uri;
   }
 
-  /// Construct default headers with Bearer token if present
+  /// Construct default headers with Bearer token if required or optional
   Future<Map<String, String>> _buildHeaders({
     Map<String, String>? extraHeaders,
     bool requiresAuth = false,
+    bool optionalAuth = false,
   }) async {
     final headers = <String, String>{
       'Content-Type': 'application/json; charset=utf-8',
       'Accept': 'application/json',
     };
 
-    final token = await TokenStorage.getAccessToken();
-    if (token != null && token.isNotEmpty) {
+    if (requiresAuth) {
+      final token = await TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        throw UnauthorizedException(
+          message: 'Yêu cầu đăng nhập để thực hiện tác vụ này.',
+        );
+      }
       headers['Authorization'] = 'Bearer $token';
+    } else if (optionalAuth) {
+      final token = await TokenStorage.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
     }
 
     if (extraHeaders != null) {

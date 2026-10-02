@@ -72,6 +72,7 @@ class ApiConfig {
   static const String authVerifyOtp = '/auth/register/verify-otp';
   static const String authRefresh = '/auth/refresh';
   static const String authLogout = '/auth/logout';
+  static const String authSession = '/auth/session';
   static const String me = '/me';
 
   // Trips

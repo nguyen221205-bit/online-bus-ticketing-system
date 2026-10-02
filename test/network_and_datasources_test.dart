@@ -102,7 +102,7 @@ void main() {
         });
 
         final apiClient = ApiClient(httpClient: mockClient);
-        final res = await apiClient.get('/test');
+        final res = await apiClient.get('/test', requiresAuth: true);
         expect(res['data']['message'], equals('success'));
       });
 
@@ -251,6 +251,7 @@ void main() {
       });
 
       test('BookingRemoteDataSourceImpl quotes and creates booking', () async {
+        await TokenStorage.saveAccessToken('valid_test_token');
         final mockClient = MockClient((request) async {
           if (request.url.path.contains('/quote')) {
             return http.Response(
@@ -343,6 +344,7 @@ void main() {
       test(
         'PaymentRemoteDataSourceImpl creates payment and checks status',
         () async {
+          await TokenStorage.saveAccessToken('valid_test_token');
           final mockClient = MockClient((request) async {
             if (request.method == 'POST') {
               return http.Response(
@@ -401,9 +403,8 @@ void main() {
     // -------------------------------------------------------------------------
     group('Hybrid Repositories Fallback', () {
       test(
-        'HybridTripRepository falls back to Mock on NetworkException',
+        'HybridTripRepository rethrows NetworkException and NEVER falls back to mock in real mode',
         () async {
-          // MockClient throwing NetworkException by returning 500 or failing
           final failingClient = MockClient((request) async {
             throw http.ClientException('Connection refused');
           });
@@ -415,11 +416,35 @@ void main() {
             mockFallback: MockTripRepository(),
           );
 
+          expect(
+            () => hybridRepo.searchTrips(fromCityId: 'SGN', toCityId: 'DLT'),
+            throwsA(isA<NetworkException>()),
+          );
+        },
+      );
+
+      test(
+        'HybridTripRepository returns empty list when remote returns [] and does not fallback',
+        () async {
+          final emptyClient = MockClient((request) async {
+            return http.Response(
+              jsonEncode({'success': true, 'data': []}),
+              200,
+            );
+          });
+
+          final hybridRepo = HybridTripRepository(
+            remoteDataSource: TripRemoteDataSourceImpl(
+              client: ApiClient(httpClient: emptyClient),
+            ),
+            mockFallback: MockTripRepository(),
+          );
+
           final trips = await hybridRepo.searchTrips(
             fromCityId: 'SGN',
             toCityId: 'DLT',
           );
-          expect(trips, isNotEmpty);
+          expect(trips, isEmpty);
         },
       );
 
@@ -447,6 +472,7 @@ void main() {
       test(
         'HybridBookingRepository rethrows NetworkException and NEVER falls back to mock for booking/payment',
         () async {
+          await TokenStorage.saveAccessToken('valid_test_token');
           final failingClient = MockClient((request) async {
             throw http.ClientException('Server down');
           });

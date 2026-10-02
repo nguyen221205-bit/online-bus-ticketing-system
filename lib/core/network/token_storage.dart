@@ -113,6 +113,16 @@ class TokenStorage {
     }
   }
 
+  /// Check if user has an active access token
+  static Future<bool> hasAccessToken() async {
+    final token = await getAccessToken();
+    return token != null && token.isNotEmpty;
+  }
+
+  /// Convenience method to save access token
+  static Future<void> saveAccessToken(String token) =>
+      saveTokens(accessToken: token);
+
   /// Clear all stored tokens upon logout
   static Future<void> clearTokens() async {
     _cachedAccessToken = null;
