@@ -24,8 +24,22 @@ class MockSeatRepository implements SeatRepository {
       'assets/mock_data/seats.json',
     );
 
+    final upperKey = seatLayoutType.toUpperCase();
+    String matchedKey = 'SLEEPER_34';
+    if (_cachedSeatsMap!.containsKey(seatLayoutType)) {
+      matchedKey = seatLayoutType;
+    } else if (upperKey.contains('LIMO') ||
+        upperKey.contains('GHẾ') ||
+        upperKey.contains('SEAT')) {
+      matchedKey = 'LIMOUSINE_9';
+    } else if (upperKey.contains('CABIN')) {
+      matchedKey = 'CABIN_22';
+    } else if (upperKey.contains('40')) {
+      matchedKey = 'SLEEPER_40';
+    }
+
     final layoutData =
-        _cachedSeatsMap![seatLayoutType] ?? _cachedSeatsMap!['SLEEPER_34'];
+        _cachedSeatsMap![matchedKey] ?? _cachedSeatsMap!['SLEEPER_34'];
     return SeatLayoutModel.fromJson(layoutData as Map<String, dynamic>);
   }
 

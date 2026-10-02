@@ -37,3 +37,41 @@ class UnauthorizedException extends ApiException {
     String errorCode = 'UNAUTHORIZED',
   }) : super(ApiError(statusCode: 401, errorCode: errorCode, message: message));
 }
+
+/// Thrown when payment transaction fails or is rejected
+class PaymentFailedException implements Exception {
+  final String message;
+  final String? failureReason;
+  final int? paymentId;
+
+  const PaymentFailedException({
+    this.message =
+        'Thanh toán không thành công. Vui lòng thử lại hoặc chọn phương thức khác.',
+    this.failureReason,
+    this.paymentId,
+  });
+
+  @override
+  String toString() => 'PaymentFailedException: $message ($failureReason)';
+}
+
+/// Thrown when payment transaction is still pending / awaiting user completion
+class PaymentPendingException implements Exception {
+  final String message;
+  final int paymentId;
+  final String? paymentUrl;
+  final String? qrCodeUrl;
+  final String? deeplink;
+
+  const PaymentPendingException({
+    this.message = 'Giao dịch thanh toán đang được xử lý hoặc chưa hoàn tất.',
+    required this.paymentId,
+    this.paymentUrl,
+    this.qrCodeUrl,
+    this.deeplink,
+  });
+
+  @override
+  String toString() =>
+      'PaymentPendingException: $message (paymentId: $paymentId)';
+}

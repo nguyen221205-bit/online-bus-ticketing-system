@@ -280,7 +280,75 @@ class SeatMapView extends StatelessWidget {
         .map((s) => s.col)
         .fold(1, (prev, curr) => curr > prev ? curr : prev);
 
-    if (maxCol == 2) {
+    if (maxCol == 4) {
+      // 4 columns (2 Left - Central Aisle - 2 Right) standard for seater buses
+      final col1 = rowSeats.where((s) => s.col == 1).firstOrNull;
+      final col2 = rowSeats.where((s) => s.col == 2).firstOrNull;
+      final col3 = rowSeats.where((s) => s.col == 3).firstOrNull;
+      final col4 = rowSeats.where((s) => s.col == 4).firstOrNull;
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: col1 != null
+                  ? SeatItem(
+                      seat: col1,
+                      isSelected: selectedSeats.any((s) => s.id == col1.id),
+                      onTap: () => onSeatToggled(col1),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              flex: 3,
+              child: col2 != null
+                  ? SeatItem(
+                      seat: col2,
+                      isSelected: selectedSeats.any((s) => s.id == col2.id),
+                      onTap: () => onSeatToggled(col2),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            Expanded(
+              flex: 2,
+              child: Center(
+                child: Text(
+                  'Lối đi',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.neutral300,
+                    fontSize: 9,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: col3 != null
+                  ? SeatItem(
+                      seat: col3,
+                      isSelected: selectedSeats.any((s) => s.id == col3.id),
+                      onTap: () => onSeatToggled(col3),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              flex: 3,
+              child: col4 != null
+                  ? SeatItem(
+                      seat: col4,
+                      isSelected: selectedSeats.any((s) => s.id == col4.id),
+                      onTap: () => onSeatToggled(col4),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      );
+    } else if (maxCol == 2) {
       // 2 columns with central aisle (Left - Aisle - Right)
       final leftSeat = rowSeats.where((s) => s.col == 1).firstOrNull;
       final rightSeat = rowSeats.where((s) => s.col == 2).firstOrNull;

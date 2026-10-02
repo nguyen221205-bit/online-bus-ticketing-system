@@ -455,6 +455,34 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
           createdTicket: createdTicket,
         ),
       );
+    } on PaymentFailedException catch (e) {
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: e.message,
+        ),
+      );
+    } on PaymentPendingException catch (e) {
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: e.message,
+        ),
+      );
+    } on ApiException catch (e) {
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: e.message,
+        ),
+      );
+    } on NetworkException catch (e) {
+      emit(
+        state.copyWith(
+          status: BookingFlowStatus.failure,
+          errorMessage: e.message,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(

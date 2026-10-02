@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_exceptions.dart';
 import '../../core/utils/json_loader.dart';
+import '../../core/utils/payment_provider_mapper.dart';
 import '../datasources/remote/booking_remote_data_source.dart';
 import '../datasources/remote/payment_remote_data_source.dart';
 import '../models/booking_model.dart';
@@ -353,22 +355,60 @@ class HybridBookingRepository implements BookingRepository {
         promotionCode: promotionCode,
       );
 
-      // Create payment transaction in MySQL
-      try {
-        final payment = await remotePaymentDataSource.createPayment(
-          bookingId: booking.bookingId,
-          provider: paymentMethod.toUpperCase(),
+      // Create and verify payment transaction in MySQL
+      final backendProvider = PaymentProviderMapper.toBackendProvider(
+        paymentMethod,
+      );
+      final payment = await remotePaymentDataSource.createPayment(
+        bookingId: booking.bookingId,
+        provider: backendProvider,
+      );
+
+      final paymentStatus = await remotePaymentDataSource.getPaymentStatus(
+        payment.paymentId,
+      );
+
+      final resolvedPaymentId = paymentStatus.paymentId > 0
+          ? paymentStatus.paymentId
+          : payment.paymentId;
+
+      if (paymentStatus.isFailed) {
+        throw PaymentFailedException(
+          message:
+              paymentStatus.failureReason ?? 'Giao dịch thanh toán thất bại.',
+          failureReason: paymentStatus.failureReason,
+          paymentId: resolvedPaymentId,
         );
-        await remotePaymentDataSource.getPaymentStatus(payment.paymentId);
-      } catch (pe) {
-        if (kDebugMode) {
-          debugPrint('[HybridBookingRepository] Payment call warning: $pe');
-        }
+      }
+
+      if (paymentStatus.isPending) {
+        throw PaymentPendingException(
+          message: 'Giao dịch thanh toán đang được xử lý hoặc chưa hoàn tất.',
+          paymentId: resolvedPaymentId,
+          paymentUrl: paymentStatus.paymentUrl,
+          qrCodeUrl: paymentStatus.qrCodeUrl,
+          deeplink: paymentStatus.deeplink,
+        );
+      }
+
+      if (!paymentStatus.isSuccess) {
+        throw PaymentFailedException(
+          message:
+              'Trạng thái thanh toán không hợp lệ: ${paymentStatus.status.name}',
+          paymentId: resolvedPaymentId,
+        );
       }
 
       final now = DateTime.now();
       final bookingDateStr =
           '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+      // Use authoritative pricing calculated by backend BookingModel
+      final authoritativeTotal = booking.originalAmount > 0
+          ? booking.originalAmount
+          : (booking.totalAmount + booking.discountAmount);
+      final authoritativeDiscount = booking.discountAmount;
+      final authoritativeFinal = booking.totalAmount;
 
       final newTicket = TicketModel(
         id: 'TKT_${booking.bookingCode}',
@@ -377,13 +417,13 @@ class HybridBookingRepository implements BookingRepository {
         bookingDate: bookingDateStr,
         trip: trip,
         seats: booking.seats.isNotEmpty ? booking.seats : seats,
-        totalAmount: totalAmount,
-        discountAmount: discountAmount,
-        finalAmount: finalAmount,
+        totalAmount: authoritativeTotal,
+        discountAmount: authoritativeDiscount,
+        finalAmount: authoritativeFinal,
         paymentMethod: paymentMethod,
         passenger: passenger,
-        licensePlate: '51B-${200 + booking.bookingId}.99',
-        driverPhone: '0909 888 777',
+        licensePlate: null,
+        driverPhone: null,
       );
 
       return newTicket;
@@ -494,7 +534,7 @@ class HybridBookingRepository implements BookingRepository {
     try {
       return await remotePaymentDataSource.createPayment(
         bookingId: bookingId,
-        provider: provider,
+        provider: PaymentProviderMapper.toBackendProvider(provider),
       );
     } catch (e) {
       if (kDebugMode) {
