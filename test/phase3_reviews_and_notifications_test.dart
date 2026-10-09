@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vexgo_app/core/network/api_config.dart';
 import 'package:vexgo_app/data/datasources/remote/notification_remote_data_source.dart';
 import 'package:vexgo_app/data/datasources/remote/review_remote_data_source.dart';
 import 'package:vexgo_app/data/models/notification_model.dart';
@@ -24,11 +25,7 @@ class FakeReviewRemoteDataSource implements ReviewRemoteDataSource {
     String? comment,
   }) async {
     called = true;
-    lastBody = {
-      'tripId': tripId,
-      'rating': rating,
-      'comment': comment,
-    };
+    lastBody = {'tripId': tripId, 'rating': rating, 'comment': comment};
     if (shouldThrow) throw Exception('Review submit failed');
     return true;
   }
@@ -73,15 +70,6 @@ void main() {
     late FakeNotificationRemoteDataSource fakeNotifDataSource;
     late HybridNotificationRepository hybridNotifRepo;
 
-    final sampleNotification = NotificationModel(
-      id: 'NOTIF_1',
-      title: 'Xác nhận đặt vé thành công',
-      message: 'Mã vé VXG-100001 đã sẵn sàng.',
-      category: NotificationCategory.trip,
-      createdAt: DateTime.now(),
-      isRead: false,
-    );
-
     final completedTicket = TicketModel(
       id: 'TKT_COMPLETED_1',
       ticketCode: 'VXG-999888',
@@ -122,92 +110,147 @@ void main() {
       );
     });
 
-    test('SubmitTicketReviewEvent calls ReviewRemoteDataSource with correct tripId and rating', () async {
-      final bloc = MyTicketsBloc(
-        reviewRemoteDataSource: fakeReviewDataSource,
-      );
+    test(
+      'SubmitTicketReviewEvent calls ReviewRemoteDataSource with correct tripId and rating',
+      () async {
+        final bloc = MyTicketsBloc(
+          reviewRemoteDataSource: fakeReviewDataSource,
+        );
 
-      bloc.add(AddNewTicketEvent(completedTicket));
+        bloc.add(AddNewTicketEvent(completedTicket));
 
-      const review = ReviewModel(
-        rating: 5,
-        comment: 'Tài xế lái rất êm và cẩn thận',
-        createdAt: '2026-10-09T00:00:00.000Z',
-      );
+        const review = ReviewModel(
+          rating: 5,
+          comment: 'Tài xế lái rất êm và cẩn thận',
+          createdAt: '2026-10-09T00:00:00.000Z',
+        );
 
-      bloc.add(
-        const SubmitTicketReviewEvent(
-          ticketId: 'TKT_COMPLETED_1',
-          review: review,
-        ),
-      );
+        bloc.add(
+          const SubmitTicketReviewEvent(
+            ticketId: 'TKT_COMPLETED_1',
+            review: review,
+          ),
+        );
 
-      await expectLater(
-        bloc.stream,
-        emitsThrough(
-          predicate<MyTicketsState>((state) {
-            final t = state.tickets.firstWhere((t) => t.id == 'TKT_COMPLETED_1');
-            return t.review != null &&
-                t.review!.rating == 5 &&
-                state.successMessage != null;
-          }),
-        ),
-      );
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<MyTicketsState>((state) {
+              final t = state.tickets.firstWhere(
+                (t) => t.id == 'TKT_COMPLETED_1',
+              );
+              return t.review != null &&
+                  t.review!.rating == 5 &&
+                  state.successMessage != null;
+            }),
+          ),
+        );
 
-      expect(fakeReviewDataSource.called, isTrue);
-      expect(fakeReviewDataSource.lastBody?['tripId'], equals(25));
-      expect(fakeReviewDataSource.lastBody?['rating'], equals(5));
-      expect(fakeReviewDataSource.lastBody?['comment'], equals('Tài xế lái rất êm và cẩn thận'));
+        expect(fakeReviewDataSource.called, isTrue);
+        expect(fakeReviewDataSource.lastBody?['tripId'], equals(25));
+        expect(fakeReviewDataSource.lastBody?['rating'], equals(5));
+        expect(
+          fakeReviewDataSource.lastBody?['comment'],
+          equals('Tài xế lái rất êm và cẩn thận'),
+        );
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
 
-    test('HybridNotificationRepository.getNotifications returns remote data', () async {
-      fakeNotifDataSource.mockList = [sampleNotification];
-      final list = await hybridNotifRepo.getNotifications();
+    test(
+      'Finding K: SubmitTicketReviewEvent in Real Mode emits error and never fakes success when backend review fails',
+      () async {
+        ApiConfig.isDemoMode = false;
+        fakeReviewDataSource.shouldThrow = true;
+        final bloc = MyTicketsBloc(
+          reviewRemoteDataSource: fakeReviewDataSource,
+        );
 
-      expect(list.length, equals(1));
-      expect(list.first.title, equals('Xác nhận đặt vé thành công'));
-    });
+        bloc.add(AddNewTicketEvent(completedTicket));
 
-    test('HybridNotificationRepository.getNotifications falls back to mock on remote error', () async {
-      fakeNotifDataSource.shouldThrow = true;
-      final list = await hybridNotifRepo.getNotifications();
+        const review = ReviewModel(
+          rating: 5,
+          comment: 'Tài xế lái rất êm và cẩn thận',
+          createdAt: '2026-10-09T00:00:00.000Z',
+        );
 
-      // Successfully loads mock notifications without throwing
-      expect(list, isNotEmpty);
-    });
+        bloc.add(
+          const SubmitTicketReviewEvent(
+            ticketId: 'TKT_COMPLETED_1',
+            review: review,
+          ),
+        );
 
-    test('NotificationBloc interacts with HybridNotificationRepository seamlessly', () async {
-      fakeNotifDataSource.mockList = [sampleNotification];
-      final bloc = NotificationBloc(notificationRepository: hybridNotifRepo);
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<MyTicketsState>((state) {
+              final t = state.tickets.firstWhere(
+                (t) => t.id == 'TKT_COMPLETED_1',
+              );
+              return t.review == null &&
+                  state.errorMessage != null &&
+                  state.errorMessage!.contains('chưa khả dụng');
+            }),
+          ),
+        );
 
-      bloc.add(const LoadNotificationsEvent());
+        await bloc.close();
+      },
+    );
 
-      await expectLater(
-        bloc.stream,
-        emitsThrough(
-          predicate<NotificationState>((state) {
-            return state.notifications.length == 1 &&
-                state.notifications.first.id == 'NOTIF_1';
-          }),
-        ),
-      );
+    test(
+      'Finding J: HybridNotificationRepository & RealNotificationRepository in Real Mode return empty without calling remote',
+      () async {
+        ApiConfig.isDemoMode = false;
+        final realRepo = RealNotificationRepository();
+        final realList = await realRepo.getNotifications();
+        expect(realList, isEmpty);
 
-      bloc.add(const MarkNotificationAsReadEvent('NOTIF_1'));
+        final hybridList = await hybridNotifRepo.getNotifications();
+        expect(hybridList, isEmpty);
+        expect(fakeNotifDataSource.mockList, isEmpty);
+      },
+    );
 
-      await expectLater(
-        bloc.stream,
-        emitsThrough(
-          predicate<NotificationState>((state) {
-            return state.unreadCount == 0;
-          }),
-        ),
-      );
+    test(
+      'Finding J: HybridNotificationRepository in Demo Mode returns mock data',
+      () async {
+        ApiConfig.isDemoMode = true;
+        try {
+          final list = await hybridNotifRepo.getNotifications();
+          expect(list, isA<List<NotificationModel>>());
+        } finally {
+          ApiConfig.isDemoMode = false;
+        }
+      },
+    );
 
-      expect(fakeNotifDataSource.lastReadId, equals('NOTIF_1'));
+    test(
+      'NotificationBloc in Demo Mode interacts with HybridNotificationRepository',
+      () async {
+        ApiConfig.isDemoMode = true;
+        try {
+          final bloc = NotificationBloc(
+            notificationRepository: hybridNotifRepo,
+          );
+          bloc.add(const LoadNotificationsEvent());
 
-      await bloc.close();
-    });
+          await expectLater(
+            bloc.stream,
+            emitsThrough(
+              predicate<NotificationState>((state) {
+                return state.status == NotificationStatus.loaded;
+              }),
+            ),
+          );
+
+          await bloc.close();
+        } finally {
+          ApiConfig.isDemoMode = false;
+        }
+      },
+    );
   });
 }

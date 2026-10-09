@@ -87,7 +87,7 @@ void main() {
             'origin': 'TP. Hồ Chí Minh',
             'destination': 'Đà Lạt',
             'distanceKm': 300,
-            'durationHours': 7,
+            'durationMinutes': 420,
           },
           'vehicle': {
             'id': 9,
@@ -108,6 +108,7 @@ void main() {
         expect(trip.totalSeats, equals(34));
         expect(trip.availableSeats, equals(18));
         expect(trip.amenities, contains('WiFi miễn phí'));
+        expect(trip.durationMinutes, equals(420));
         expect(trip.duration, contains('7 giờ'));
       },
     );

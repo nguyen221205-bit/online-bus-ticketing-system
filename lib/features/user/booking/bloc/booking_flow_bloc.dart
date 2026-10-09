@@ -52,7 +52,15 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
       final tripId = event.trip.numericTripId ?? int.tryParse(event.trip.id);
       SeatLayoutModel seatLayout;
       if (tripId != null && tripId > 0) {
-        final realSeats = await seatRepository.getTripSeats(tripId);
+        final authoritativePrice = event.trip.discountPrice > 0
+            ? event.trip.discountPrice
+            : (event.trip.originalPrice > 0 ? event.trip.originalPrice : null);
+        final rawSeats = await seatRepository.getTripSeats(tripId);
+        final realSeats = rawSeats.map((s) {
+          if (s.price != null && s.price! > 0) return s;
+          return s.copyWith(price: authoritativePrice);
+        }).toList();
+
         final lower = realSeats.where((s) => s.floor == 1).toList();
         final upper = realSeats.where((s) => s.floor == 2).toList();
         seatLayout = SeatLayoutModel(
@@ -87,6 +95,10 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         );
       }
 
+      final initialPassengerName = event.passengerName?.trim() ?? '';
+      final initialPassengerPhone = event.passengerPhone?.trim() ?? '';
+      final initialPassengerEmail = event.passengerEmail?.trim() ?? '';
+
       emit(
         state.copyWith(
           status: BookingFlowStatus.loaded,
@@ -97,6 +109,15 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
           availableDropoffPoints: dropoffs,
           selectedDropoffPoint: defaultDropoff,
           selectedFloor: 1,
+          passengerName: initialPassengerName.isNotEmpty
+              ? initialPassengerName
+              : state.passengerName,
+          passengerPhone: initialPassengerPhone.isNotEmpty
+              ? initialPassengerPhone
+              : state.passengerPhone,
+          passengerEmail: initialPassengerEmail.isNotEmpty
+              ? initialPassengerEmail
+              : state.passengerEmail,
         ),
       );
     } catch (e) {
@@ -292,6 +313,17 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         );
         _startCountdown();
         return;
+      } on UnsupportedError {
+        // Backend at HEAD f2edf7f has no seat hold API.
+        // Per Finding I: In real mode, proceed directly to pickupPoint without server hold.
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.loaded,
+            step: BookingStep.pickupPoint,
+            errorMessage: null,
+          ),
+        );
+        return;
       } on ApiException catch (e) {
         emit(
           state.copyWith(
@@ -481,6 +513,17 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         return;
       }
 
+      if (state.seatsTotalAmount == null || state.seatsTotalAmount! <= 0) {
+        emit(
+          state.copyWith(
+            status: BookingFlowStatus.failure,
+            errorMessage:
+                'Giá vé chuyến đi chưa được xác định. Không thể tiếp tục thanh toán.',
+          ),
+        );
+        return;
+      }
+
       final holdToken = state.seatHold?.holdToken;
 
       final createdTicket = await bookingRepository.createBooking(
@@ -489,9 +532,9 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         seatIds: seatIds,
         holdToken: holdToken,
         promotionCode: state.appliedVoucher?.code,
-        totalAmount: state.seatsTotalAmount,
+        totalAmount: state.seatsTotalAmount!,
         discountAmount: state.discountAmount,
-        finalAmount: state.finalAmount,
+        finalAmount: state.finalAmount ?? 0,
         paymentMethod: state.selectedPaymentMethod,
         passenger: passenger,
       );

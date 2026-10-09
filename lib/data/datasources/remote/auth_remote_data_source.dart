@@ -14,6 +14,12 @@ abstract class AuthRemoteDataSource {
     String? challengeId,
   });
   Future<UserModel?> getCurrentUser();
+  Future<UserModel> updateProfile({
+    String? fullName,
+    String? dateOfBirth,
+    String? email,
+    String? citizenId,
+  });
   Future<void> logout();
 }
 
@@ -71,7 +77,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       requiresAuth: false,
     );
     if (res is Map<String, dynamic>) {
-      final challengeId = res['challengeId'] as String? ??
+      final challengeId =
+          res['challengeId'] as String? ??
           (res['data'] is Map<String, dynamic>
               ? res['data']['challengeId'] as String?
               : null);
@@ -166,6 +173,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  Future<UserModel> updateProfile({
+    String? fullName,
+    String? dateOfBirth,
+    String? email,
+    String? citizenId,
+  }) async {
+    final body = <String, dynamic>{};
+    if (fullName != null) body['fullName'] = fullName;
+    if (dateOfBirth != null) body['dateOfBirth'] = dateOfBirth;
+    if (email != null) body['email'] = email;
+    if (citizenId != null) body['citizenId'] = citizenId;
+    final res = await client.patch(
+      ApiConfig.me,
+      body: body,
+      requiresAuth: true,
+    );
+    if (res is Map<String, dynamic>) {
+      final data = res['data'] is Map<String, dynamic>
+          ? res['data'] as Map<String, dynamic>
+          : res;
+      return UserModel.fromJson(data);
+    }
+    throw Exception('Phản hồi cập nhật thông tin không hợp lệ');
   }
 
   @override

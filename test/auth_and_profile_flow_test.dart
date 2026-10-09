@@ -38,7 +38,8 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<String> sendOtp({required String phone}) async => 'test-challenge-uuid';
+  Future<String> sendOtp({required String phone}) async =>
+      'test-challenge-uuid';
 
   @override
   Future<UserModel> verifyOtpAndRegister({
@@ -407,10 +408,7 @@ void main() {
         await authBloc.stream.firstWhere(
           (s) => s.status == AuthStatus.otpRequired,
         );
-        expect(
-          authBloc.state.pendingPassword,
-          equals('MySecretPassword123!'),
-        );
+        expect(authBloc.state.pendingPassword, equals('MySecretPassword123!'));
 
         // Step 2: Verify OTP completes registration and PURGES pendingPassword
         authBloc.add(
@@ -450,16 +448,11 @@ void main() {
         await authBloc.stream.firstWhere(
           (s) => s.status == AuthStatus.otpRequired,
         );
-        expect(
-          authBloc.state.pendingPassword,
-          equals('SecretToCancel123!'),
-        );
+        expect(authBloc.state.pendingPassword, equals('SecretToCancel123!'));
 
         // Cancel / back navigation wipes sensitive data
         authBloc.add(const ClearPendingRegistrationEvent());
-        await authBloc.stream.firstWhere(
-          (s) => s.pendingPassword == null,
-        );
+        await authBloc.stream.firstWhere((s) => s.pendingPassword == null);
 
         expect(authBloc.state.pendingPassword, isNull);
         expect(authBloc.state.pendingPhone, isNull);

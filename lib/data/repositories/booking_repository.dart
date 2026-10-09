@@ -329,9 +329,7 @@ class MockBookingRepository implements BookingRepository {
   }) async {
     final tickets = await getMyTickets();
     try {
-      return tickets.firstWhere(
-        (t) => t.ticketCode == ticketCode,
-      );
+      return tickets.firstWhere((t) => t.ticketCode == ticketCode);
     } catch (_) {
       return null;
     }
@@ -374,9 +372,7 @@ class HybridBookingRepository implements BookingRepository {
       return await mockFallback.getMyTickets();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridBookingRepository] Remote getMyTickets failed: $e',
-        );
+        debugPrint('[HybridBookingRepository] Remote getMyTickets failed: $e');
       }
       if (ApiConfig.isDemoMode) {
         return await mockFallback.getMyTickets();
@@ -542,9 +538,7 @@ class HybridBookingRepository implements BookingRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridBookingRepository] Remote quote failed: $e',
-        );
+        debugPrint('[HybridBookingRepository] Remote quote failed: $e');
       }
       if (ApiConfig.isDemoMode) {
         return mockFallback.getBookingQuote(
@@ -686,9 +680,7 @@ class HybridBookingRepository implements BookingRepository {
       return res;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[HybridBookingRepository] Remote cancelTicket failed: $e',
-        );
+        debugPrint('[HybridBookingRepository] Remote cancelTicket failed: $e');
       }
       if (ApiConfig.isDemoMode) {
         return await mockFallback.cancelTicket(
@@ -734,15 +726,15 @@ class RealBookingRepository implements BookingRepository {
     BookingRemoteDataSource? remoteBookingDataSource,
     PaymentRemoteDataSource? remotePaymentDataSource,
     TicketRemoteDataSource? remoteTicketDataSource,
-  })  : remoteBookingDataSource =
-            remoteBookingDataSource ??
-            BookingRemoteDataSourceImpl(client: ApiClient()),
-        remotePaymentDataSource =
-            remotePaymentDataSource ??
-            PaymentRemoteDataSourceImpl(client: ApiClient()),
-        remoteTicketDataSource =
-            remoteTicketDataSource ??
-            TicketRemoteDataSourceImpl(client: ApiClient());
+  }) : remoteBookingDataSource =
+           remoteBookingDataSource ??
+           BookingRemoteDataSourceImpl(client: ApiClient()),
+       remotePaymentDataSource =
+           remotePaymentDataSource ??
+           PaymentRemoteDataSourceImpl(client: ApiClient()),
+       remoteTicketDataSource =
+           remoteTicketDataSource ??
+           TicketRemoteDataSourceImpl(client: ApiClient());
 
   @override
   Future<List<VoucherModel>> getVouchers() async => const [];
@@ -966,5 +958,3 @@ class RealBookingRepository implements BookingRepository {
     );
   }
 }
-
-

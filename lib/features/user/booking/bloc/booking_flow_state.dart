@@ -108,9 +108,9 @@ class BookingFlowState extends Equatable {
     this.selectedPickupPoint,
     this.availableDropoffPoints = const [],
     this.selectedDropoffPoint,
-    this.passengerName = 'Nguyễn Văn An',
-    this.passengerPhone = '0987654321',
-    this.passengerEmail = 'nguyenvanan@gmail.com',
+    this.passengerName = '',
+    this.passengerPhone = '',
+    this.passengerEmail = '',
     this.passengerNote = '',
     this.savePassengerInfo = true,
     this.appliedVoucher,
@@ -127,13 +127,20 @@ class BookingFlowState extends Equatable {
     this.pendingDeeplink,
   });
 
-  int get seatsTotalAmount =>
-      selectedSeats.fold(0, (sum, seat) => sum + seat.price);
+  bool get hasValidSeatPricing =>
+      selectedSeats.isNotEmpty &&
+      selectedSeats.every((s) => s.price != null && s.price! > 0);
+
+  int? get seatsTotalAmount {
+    if (selectedSeats.isEmpty) return 0;
+    if (!hasValidSeatPricing) return null;
+    return selectedSeats.fold<int>(0, (sum, seat) => sum + seat.price!);
+  }
 
   int get discountAmount {
     if (appliedVoucher == null) return 0;
     final total = seatsTotalAmount;
-    if (total < appliedVoucher!.minOrderAmount) return 0;
+    if (total == null || total < appliedVoucher!.minOrderAmount) return 0;
 
     if (appliedVoucher!.discountPercent > 0) {
       final calc = (total * appliedVoucher!.discountPercent / 100).round();
@@ -146,9 +153,13 @@ class BookingFlowState extends Equatable {
     return appliedVoucher!.discountAmount;
   }
 
-  int get finalAmount => max(0, seatsTotalAmount - discountAmount);
+  int? get finalAmount {
+    final seatsTotal = seatsTotalAmount;
+    if (seatsTotal == null) return null;
+    return max(0, seatsTotal - discountAmount);
+  }
 
-  bool get isSeatsValid => selectedSeats.isNotEmpty;
+  bool get isSeatsValid => selectedSeats.isNotEmpty && hasValidSeatPricing;
   bool get isPickupValid => selectedPickupPoint != null;
   bool get isDropoffValid => selectedDropoffPoint != null;
   bool get isPassengerValid =>

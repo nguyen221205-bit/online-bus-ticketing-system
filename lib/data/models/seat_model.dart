@@ -7,7 +7,7 @@ class SeatModel extends Equatable {
   final String name;
   final int floor; // 1: Tầng dưới, 2: Tầng trên
   final SeatStatus status;
-  final int price;
+  final int? price;
   final int row;
   final int col;
 
@@ -16,7 +16,7 @@ class SeatModel extends Equatable {
     required this.name,
     required this.floor,
     required this.status,
-    required this.price,
+    this.price,
     required this.row,
     required this.col,
   });
@@ -41,7 +41,7 @@ class SeatModel extends Equatable {
     );
   }
 
-  factory SeatModel.fromJson(Map<String, dynamic> json) {
+  factory SeatModel.fromJson(Map<String, dynamic> json, {int? tripPrice}) {
     SeatStatus parseStatus(String? statusStr) {
       switch (statusStr?.toUpperCase()) {
         case 'BOOKED':
@@ -60,15 +60,36 @@ class SeatModel extends Equatable {
       }
     }
 
-    final id = (json['tripSeatId'] ?? json['seatId'] ?? json['id'] ?? '')
-        .toString();
-    final name = (json['seatNumber'] ?? json['seatCode'] ?? json['name'] ?? '')
-        .toString();
+    final seatMap = json['seat'] is Map<String, dynamic>
+        ? json['seat'] as Map<String, dynamic>
+        : null;
+
+    final id =
+        (json['tripSeatId'] ??
+                json['seatId'] ??
+                seatMap?['seatId'] ??
+                json['id'] ??
+                '')
+            .toString();
+    final name =
+        (json['seatNumber'] ??
+                seatMap?['code'] ??
+                seatMap?['soGhe'] ??
+                json['seatCode'] ??
+                json['name'] ??
+                '')
+            .toString();
     final status = parseStatus(
-      json['status'] as String? ?? json['trangThai'] as String?,
+      json['status'] as String? ??
+          json['trangThai'] as String? ??
+          seatMap?['status'] as String?,
     );
 
-    final positionStr = json['position'] as String? ?? '';
+    final positionStr =
+        json['position']?.toString() ??
+        seatMap?['position']?.toString() ??
+        seatMap?['viTri']?.toString() ??
+        '';
     final hasUpperInPosition =
         positionStr.contains('Tầng trên') ||
         positionStr.contains('tầng trên') ||
@@ -80,8 +101,11 @@ class SeatModel extends Equatable {
         (json['tang'] as num?)?.toInt() ??
         ((hasUpperInPosition || startsWithB) ? 2 : 1);
 
-    final price =
-        (json['price'] as num?)?.toInt() ?? (json['gia'] as num?)?.toInt() ?? 0;
+    final rawPrice =
+        (json['price'] as num?)?.toInt() ?? (json['gia'] as num?)?.toInt();
+    final effectivePrice = (rawPrice != null && rawPrice > 0)
+        ? rawPrice
+        : (tripPrice != null && tripPrice > 0 ? tripPrice : null);
 
     int row =
         (json['row'] as num?)?.toInt() ?? (json['hang'] as num?)?.toInt() ?? 0;
@@ -104,7 +128,7 @@ class SeatModel extends Equatable {
       name: name,
       floor: floor,
       status: status,
-      price: price,
+      price: effectivePrice,
       row: row,
       col: col,
     );
@@ -113,11 +137,13 @@ class SeatModel extends Equatable {
   Map<String, dynamic> toJson() => {
     'id': id,
     'seatId': numericSeatId,
+    'tripSeatId': numericSeatId,
     'name': name,
+    'seatNumber': name,
     'seatCode': name,
     'floor': floor,
     'status': status.name.toUpperCase(),
-    'price': price,
+    if (price != null) 'price': price,
     'row': row,
     'col': col,
   };

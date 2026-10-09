@@ -35,10 +35,7 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
     int pageSize = 20,
     String? status,
   }) async {
-    final query = <String, dynamic>{
-      'page': page,
-      'pageSize': pageSize,
-    };
+    final query = <String, dynamic>{'page': page, 'pageSize': pageSize};
     if (status != null && status.isNotEmpty) {
       query['status'] = status;
     }
@@ -83,10 +80,7 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
     required String ticketCode,
     required String phoneNumber,
   }) async {
-    final body = {
-      'ticketCode': ticketCode,
-      'phoneNumber': phoneNumber,
-    };
+    final body = {'ticketCode': ticketCode, 'phoneNumber': phoneNumber};
 
     final res = await client.post(
       ApiConfig.ticketLookup,

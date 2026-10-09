@@ -16,6 +16,7 @@ class TripModel extends Equatable {
   final String? rawDepartureTime;
   final String? rawArrivalTime;
   final String duration;
+  final int? durationMinutes;
   final String pickupPoint;
   final String pickupAddress;
   final String dropoffPoint;
@@ -47,6 +48,7 @@ class TripModel extends Equatable {
     this.rawDepartureTime,
     this.rawArrivalTime,
     required this.duration,
+    this.durationMinutes,
     required this.pickupPoint,
     required this.pickupAddress,
     required this.dropoffPoint,
@@ -152,53 +154,78 @@ class TripModel extends Equatable {
         : null;
 
     final id = json['tripId']?.toString() ?? json['id']?.toString() ?? '';
-    final routeId = json['routeId']?.toString() ?? routeMap?['id']?.toString();
+    final routeId =
+        routeMap?['id']?.toString() ??
+        routeMap?['routeId']?.toString() ??
+        json['routeId']?.toString();
 
     // Map operator/busCompany
-    String operatorId =
-        json['busCompanyId']?.toString() ??
-        json['operatorId']?.toString() ??
-        '';
-    String operatorName =
-        json['busCompanyName'] as String? ??
-        json['operatorName'] as String? ??
-        '';
+    String operatorId = '';
+    String operatorName = '';
     if (json['busCompany'] is Map<String, dynamic>) {
       final bc = json['busCompany'] as Map<String, dynamic>;
-      if (operatorId.isEmpty) operatorId = bc['id']?.toString() ?? '';
-      if (operatorName.isEmpty) operatorName = bc['name'] as String? ?? '';
+      operatorId = bc['id']?.toString() ?? bc['busCompanyId']?.toString() ?? '';
+      operatorName = bc['name'] as String? ?? bc['tenNhaXe'] as String? ?? '';
+    }
+    if (operatorId.isEmpty) {
+      operatorId =
+          json['busCompanyId']?.toString() ??
+          json['operatorId']?.toString() ??
+          '';
+    }
+    if (operatorName.isEmpty) {
+      operatorName =
+          json['busCompanyName'] as String? ??
+          json['operatorName'] as String? ??
+          '';
     }
 
     // Map vehicle details
     final vehicleType =
+        vehicleMap?['type'] as String? ??
+        vehicleMap?['vehicleType'] as String? ??
         json['vehicleTypeName'] as String? ??
         json['vehicleType'] as String? ??
-        vehicleMap?['type'] as String? ??
         '';
     final totalSeats =
-        (json['totalSeats'] as num?)?.toInt() ??
         (vehicleMap?['capacity'] as num?)?.toInt() ??
+        (json['totalSeats'] as num?)?.toInt() ??
         0;
 
     // Map route points
     final fromCityName =
-        json['fromCityName'] as String? ?? routeMap?['origin'] as String? ?? '';
+        routeMap?['origin'] as String? ?? json['fromCityName'] as String? ?? '';
     final toCityName =
-        json['toCityName'] as String? ??
         routeMap?['destination'] as String? ??
+        json['toCityName'] as String? ??
         '';
     final fromCityId =
-        json['fromCityId']?.toString() ??
         routeMap?['originId']?.toString() ??
+        json['fromCityId']?.toString() ??
         fromCityName;
     final toCityId =
-        json['toCityId']?.toString() ??
         routeMap?['destinationId']?.toString() ??
+        json['toCityId']?.toString() ??
         toCityName;
 
+    final durationMinutes =
+        (routeMap?['durationMinutes'] as num?)?.toInt() ??
+        (json['durationMinutes'] as num?)?.toInt() ??
+        (routeMap?['durationHours'] != null
+            ? ((routeMap!['durationHours'] as num).toInt() * 60)
+            : null);
+
     String duration = json['duration'] as String? ?? '';
-    if (duration.isEmpty && routeMap?['durationHours'] != null) {
-      duration = '${routeMap!['durationHours']} giờ';
+    if (duration.isEmpty && durationMinutes != null && durationMinutes > 0) {
+      final hours = durationMinutes ~/ 60;
+      final remainingMinutes = durationMinutes % 60;
+      if (hours > 0 && remainingMinutes > 0) {
+        duration = '$hours giờ $remainingMinutes phút';
+      } else if (hours > 0) {
+        duration = '$hours giờ';
+      } else {
+        duration = '$remainingMinutes phút';
+      }
     }
 
     // Map pricing: support single 'price' from backend or original/discount pair
@@ -211,10 +238,10 @@ class TripModel extends Equatable {
         originalPrice;
 
     final amenities =
-        (json['amenities'] as List<dynamic>?)
+        (vehicleMap?['amenities'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
-        (vehicleMap?['amenities'] as List<dynamic>?)
+        (json['amenities'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
         const [];
@@ -234,6 +261,7 @@ class TripModel extends Equatable {
       rawDepartureTime: rawDepartureTime.isNotEmpty ? rawDepartureTime : null,
       rawArrivalTime: rawArrivalTime.isNotEmpty ? rawArrivalTime : null,
       duration: duration,
+      durationMinutes: durationMinutes,
       pickupPoint: defaultPickup,
       pickupAddress: defaultPickupAddress,
       dropoffPoint: defaultDropoff,
@@ -275,6 +303,7 @@ class TripModel extends Equatable {
     if (rawDepartureTime != null) 'rawDepartureTime': rawDepartureTime,
     if (rawArrivalTime != null) 'rawArrivalTime': rawArrivalTime,
     'duration': duration,
+    if (durationMinutes != null) 'durationMinutes': durationMinutes,
     'pickupPoint': pickupPoint,
     'pickupAddress': pickupAddress,
     'dropoffPoint': dropoffPoint,
@@ -307,5 +336,6 @@ class TripModel extends Equatable {
     departureTime,
     discountPrice,
     routeId,
+    durationMinutes,
   ];
 }

@@ -51,11 +51,7 @@ class FakeTicketRemoteDataSource implements TicketRemoteDataSource {
       'expectedCancelFeeRate': expectedCancelFeeRate,
     };
     if (shouldThrow) throw Exception('Backend reject');
-    return {
-      'success': true,
-      'refundAmount': 270000,
-      'cancelFee': 30000,
-    };
+    return {'success': true, 'refundAmount': 270000, 'cancelFee': 30000};
   }
 }
 
@@ -114,86 +110,109 @@ void main() {
       );
     });
 
-    test('HybridBookingRepository.getMyTickets returns remote data when available', () async {
-      fakeRemoteDataSource.mockTickets = [sampleTicket];
-      final tickets = await hybridRepo.getMyTickets();
-
-      expect(tickets.length, equals(1));
-      expect(tickets.first.ticketCode, equals('VXG-100001'));
-    });
-
-    test('HybridBookingRepository.getMyTickets falls back to mock if remote throws in demo mode', () async {
-      ApiConfig.isDemoMode = true;
-      try {
-        fakeRemoteDataSource.shouldThrow = true;
+    test(
+      'HybridBookingRepository.getMyTickets returns remote data when available',
+      () async {
+        fakeRemoteDataSource.mockTickets = [sampleTicket];
         final tickets = await hybridRepo.getMyTickets();
 
-        // Mock tickets loaded from JSON fallback
-        expect(tickets, isNotEmpty);
-      } finally {
-        ApiConfig.isDemoMode = false;
-      }
-    });
+        expect(tickets.length, equals(1));
+        expect(tickets.first.ticketCode, equals('VXG-100001'));
+      },
+    );
 
-    test('HybridBookingRepository.cancelTicket calls remote and sends expected fee rate', () async {
-      fakeRemoteDataSource.mockTickets = [sampleTicket];
-      final res = await hybridRepo.cancelTicket(
-        ticketCode: 'VXG-100001',
-        phoneNumber: '0901234567',
-        reason: 'Thay đổi lịch trình',
-        expectedCancelFeeRate: 0.1,
-      );
+    test(
+      'HybridBookingRepository.getMyTickets falls back to mock if remote throws in demo mode',
+      () async {
+        ApiConfig.isDemoMode = true;
+        try {
+          fakeRemoteDataSource.shouldThrow = true;
+          final tickets = await hybridRepo.getMyTickets();
 
-      expect(res['success'], isTrue);
-      expect(fakeRemoteDataSource.lastCancelPayload?['expectedCancelFeeRate'], equals(0.1));
-      expect(fakeRemoteDataSource.lastCancelPayload?['ticketCode'], equals('VXG-100001'));
-    });
+          // Mock tickets loaded from JSON fallback
+          expect(tickets, isNotEmpty);
+        } finally {
+          ApiConfig.isDemoMode = false;
+        }
+      },
+    );
 
-    test('MyTicketsBloc with HybridBookingRepository loads tickets from repository', () async {
-      fakeRemoteDataSource.mockTickets = [sampleTicket];
-      final bloc = MyTicketsBloc(bookingRepository: hybridRepo);
+    test(
+      'HybridBookingRepository.cancelTicket calls remote and sends expected fee rate',
+      () async {
+        fakeRemoteDataSource.mockTickets = [sampleTicket];
+        final res = await hybridRepo.cancelTicket(
+          ticketCode: 'VXG-100001',
+          phoneNumber: '0901234567',
+          reason: 'Thay đổi lịch trình',
+          expectedCancelFeeRate: 0.1,
+        );
 
-      bloc.add(const LoadMyTicketsEvent());
+        expect(res['success'], isTrue);
+        expect(
+          fakeRemoteDataSource.lastCancelPayload?['expectedCancelFeeRate'],
+          equals(0.1),
+        );
+        expect(
+          fakeRemoteDataSource.lastCancelPayload?['ticketCode'],
+          equals('VXG-100001'),
+        );
+      },
+    );
 
-      await expectLater(
-        bloc.stream,
-        emitsThrough(
-          predicate<MyTicketsState>((state) {
-            return state.status == MyTicketsStatus.loaded &&
-                state.tickets.any((t) => t.ticketCode == 'VXG-100001');
-          }),
-        ),
-      );
+    test(
+      'MyTicketsBloc with HybridBookingRepository loads tickets from repository',
+      () async {
+        fakeRemoteDataSource.mockTickets = [sampleTicket];
+        final bloc = MyTicketsBloc(bookingRepository: hybridRepo);
 
-      await bloc.close();
-    });
+        bloc.add(const LoadMyTicketsEvent());
 
-    test('MyTicketsBloc successfully cancels ticket via cancelTicket API', () async {
-      fakeRemoteDataSource.mockTickets = [sampleTicket];
-      final bloc = MyTicketsBloc(bookingRepository: hybridRepo);
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<MyTicketsState>((state) {
+              return state.status == MyTicketsStatus.loaded &&
+                  state.tickets.any((t) => t.ticketCode == 'VXG-100001');
+            }),
+          ),
+        );
 
-      bloc.add(AddNewTicketEvent(sampleTicket));
-      bloc.add(
-        const CancelTicketEvent(
-          ticketId: 'TKT_100',
-          reason: 'Bận việc',
-          refundAmount: 270000,
-        ),
-      );
+        await bloc.close();
+      },
+    );
 
-      await expectLater(
-        bloc.stream,
-        emitsThrough(
-          predicate<MyTicketsState>((state) {
-            return state.selectedTab == TicketStatus.cancelled &&
-                state.cancelledTickets.any((t) => t.ticketCode == 'VXG-100001') &&
-                state.successMessage != null &&
-                state.successMessage!.contains('270000');
-          }),
-        ),
-      );
+    test(
+      'MyTicketsBloc successfully cancels ticket via cancelTicket API',
+      () async {
+        fakeRemoteDataSource.mockTickets = [sampleTicket];
+        final bloc = MyTicketsBloc(bookingRepository: hybridRepo);
 
-      await bloc.close();
-    });
+        bloc.add(AddNewTicketEvent(sampleTicket));
+        bloc.add(
+          const CancelTicketEvent(
+            ticketId: 'TKT_100',
+            reason: 'Bận việc',
+            refundAmount: 270000,
+          ),
+        );
+
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<MyTicketsState>((state) {
+              return state.selectedTab == TicketStatus.cancelled &&
+                  state.cancelledTickets.any(
+                    (t) => t.ticketCode == 'VXG-100001',
+                  ) &&
+                  state.successMessage != null &&
+                  state.successMessage!.contains('270000');
+            }),
+          ),
+        );
+
+        await bloc.close();
+      },
+    );
   });
 }

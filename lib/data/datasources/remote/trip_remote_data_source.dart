@@ -75,11 +75,15 @@ class TripRemoteDataSourceImpl implements TripRemoteDataSource {
     if (res is Map<String, dynamic> && res['data'] is List) {
       final list = res['data'] as List;
       return list
-          .map((item) => PopularRouteModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => PopularRouteModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     } else if (res is List) {
       return res
-          .map((item) => PopularRouteModel.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => PopularRouteModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
     return [];

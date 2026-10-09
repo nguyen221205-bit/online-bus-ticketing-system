@@ -93,11 +93,15 @@ class _PopularRouteCard extends StatelessWidget {
         final state = homeBloc.state;
 
         final fromCity = state.cities.firstWhere(
-          (c) => c.id == route.fromCityId,
+          (c) =>
+              (route.fromCityId != null && c.id == route.fromCityId) ||
+              c.name.toLowerCase() == route.fromCityName.toLowerCase(),
           orElse: () => state.departureCity!,
         );
         final toCity = state.cities.firstWhere(
-          (c) => c.id == route.toCityId,
+          (c) =>
+              (route.toCityId != null && c.id == route.toCityId) ||
+              c.name.toLowerCase() == route.toCityName.toLowerCase(),
           orElse: () => state.destinationCity!,
         );
 
@@ -217,27 +221,37 @@ class _PopularRouteCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppDimensions.xs + 2),
-                  Row(
-                    children: [
-                      Text(
-                        'Từ ',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.neutral500,
-                        ),
-                      ),
-                      Flexible(
-                        child: Text(
-                          CurrencyFormatter.format(route.minPrice),
-                          style: AppTextStyles.price.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                  if (route.minPrice != null)
+                    Row(
+                      children: [
+                        Text(
+                          'Từ ',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.neutral500,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
+                        Flexible(
+                          child: Text(
+                            CurrencyFormatter.format(route.minPrice!),
+                            style: AppTextStyles.price.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      'Xem giá vé',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
-                    ],
-                  ),
+                    ),
                 ],
               ),
             ),

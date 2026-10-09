@@ -612,148 +612,173 @@ void main() {
     // -------------------------------------------------------------------------
     // Finding 3 [BLOCKER]: Auth Remote Data Source Contract Alignment
     // -------------------------------------------------------------------------
-    group('Finding 3 [BLOCKER]: Auth Remote Data Source Contract Alignment', () {
-      test('sendOtp extracts challengeId from backend response', () async {
-        final mockHttp = MockClient((request) async {
-          expect(request.url.path, contains(ApiConfig.authRequestOtp));
-          final body = jsonDecode(request.body) as Map<String, dynamic>;
-          expect(body['phoneNumber'], equals('+84912345678'));
-
-          return http.Response(
-            jsonEncode({
-              'statusCode': 201,
-              'data': {
-                'challengeId': 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
-                'expiresAt': '2026-10-09T20:00:00Z',
-                'resendAfter': '2026-10-09T19:56:00Z',
-              },
-            }),
-            201,
-            headers: {'content-type': 'application/json; charset=utf-8'},
-          );
-        });
-
-        final client = ApiClient(httpClient: mockHttp);
-        final authSource = AuthRemoteDataSourceImpl(client: client);
-
-        final challengeId = await authSource.sendOtp(phone: '0912345678');
-        expect(challengeId, equals('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'));
-      });
-
-      test('verifyOtpAndRegister sends challengeId in verify-otp request', () async {
-        final mockHttp = MockClient((request) async {
-          if (request.url.path.contains(ApiConfig.authVerifyOtp)) {
+    group(
+      'Finding 3 [BLOCKER]: Auth Remote Data Source Contract Alignment',
+      () {
+        test('sendOtp extracts challengeId from backend response', () async {
+          final mockHttp = MockClient((request) async {
+            expect(request.url.path, contains(ApiConfig.authRequestOtp));
             final body = jsonDecode(request.body) as Map<String, dynamic>;
-            expect(body['challengeId'], equals('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'));
             expect(body['phoneNumber'], equals('+84912345678'));
-            expect(body['otp'], equals('123456'));
-
-            return http.Response(
-              jsonEncode({
-                'statusCode': 200,
-                'data': {
-                  'otpProof': 'proof_token_abc_xyz',
-                  'expiresAt': '2026-10-09T20:10:00Z',
-                },
-              }),
-              200,
-              headers: {'content-type': 'application/json; charset=utf-8'},
-            );
-          } else if (request.url.path.contains(ApiConfig.authRegister)) {
-            final body = jsonDecode(request.body) as Map<String, dynamic>;
-            expect(body['otpProof'], equals('proof_token_abc_xyz'));
-            expect(body['fullName'], equals('Test User'));
 
             return http.Response(
               jsonEncode({
                 'statusCode': 201,
                 'data': {
-                  'accessToken': 'access_token_123',
-                  'refreshToken': 'refresh_token_456',
-                  'user': {
-                    'taiKhoanId': 1,
-                    'maKhachHang': 'KH001',
-                    'hoTen': 'Test User',
-                    'soDienThoai': '+84912345678',
-                    'diemTichLuy': 0,
-                    'hangThanhVien': 'BẠC',
-                  },
+                  'challengeId': 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
+                  'expiresAt': '2026-10-09T20:00:00Z',
+                  'resendAfter': '2026-10-09T19:56:00Z',
                 },
               }),
               201,
               headers: {'content-type': 'application/json; charset=utf-8'},
             );
-          }
-          return http.Response('Not Found', 404);
+          });
+
+          final client = ApiClient(httpClient: mockHttp);
+          final authSource = AuthRemoteDataSourceImpl(client: client);
+
+          final challengeId = await authSource.sendOtp(phone: '0912345678');
+          expect(challengeId, equals('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'));
         });
 
-        final client = ApiClient(httpClient: mockHttp);
-        final authSource = AuthRemoteDataSourceImpl(client: client);
+        test(
+          'verifyOtpAndRegister sends challengeId in verify-otp request',
+          () async {
+            final mockHttp = MockClient((request) async {
+              if (request.url.path.contains(ApiConfig.authVerifyOtp)) {
+                final body = jsonDecode(request.body) as Map<String, dynamic>;
+                expect(
+                  body['challengeId'],
+                  equals('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'),
+                );
+                expect(body['phoneNumber'], equals('+84912345678'));
+                expect(body['otp'], equals('123456'));
 
-        final user = await authSource.verifyOtpAndRegister(
-          phone: '0912345678',
-          otp: '123456',
-          fullName: 'Test User',
-          password: 'SecretPassword123!',
-          challengeId: 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
+                return http.Response(
+                  jsonEncode({
+                    'statusCode': 200,
+                    'data': {
+                      'otpProof': 'proof_token_abc_xyz',
+                      'expiresAt': '2026-10-09T20:10:00Z',
+                    },
+                  }),
+                  200,
+                  headers: {'content-type': 'application/json; charset=utf-8'},
+                );
+              } else if (request.url.path.contains(ApiConfig.authRegister)) {
+                final body = jsonDecode(request.body) as Map<String, dynamic>;
+                expect(body['otpProof'], equals('proof_token_abc_xyz'));
+                expect(body['fullName'], equals('Test User'));
+
+                return http.Response(
+                  jsonEncode({
+                    'statusCode': 201,
+                    'data': {
+                      'accessToken': 'access_token_123',
+                      'refreshToken': 'refresh_token_456',
+                      'user': {
+                        'taiKhoanId': 1,
+                        'maKhachHang': 'KH001',
+                        'hoTen': 'Test User',
+                        'soDienThoai': '+84912345678',
+                        'diemTichLuy': 0,
+                        'hangThanhVien': 'BẠC',
+                      },
+                    },
+                  }),
+                  201,
+                  headers: {'content-type': 'application/json; charset=utf-8'},
+                );
+              }
+              return http.Response('Not Found', 404);
+            });
+
+            final client = ApiClient(httpClient: mockHttp);
+            final authSource = AuthRemoteDataSourceImpl(client: client);
+
+            final user = await authSource.verifyOtpAndRegister(
+              phone: '0912345678',
+              otp: '123456',
+              fullName: 'Test User',
+              password: 'SecretPassword123!',
+              challengeId: 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
+            );
+
+            expect(user.taiKhoanId, equals(1));
+            expect(user.hoTen, equals('Test User'));
+            expect(
+              await TokenStorage.getAccessToken(),
+              equals('access_token_123'),
+            );
+            expect(
+              await TokenStorage.getRefreshToken(),
+              equals('refresh_token_456'),
+            );
+          },
         );
 
-        expect(user.taiKhoanId, equals(1));
-        expect(user.hoTen, equals('Test User'));
-        expect(await TokenStorage.getAccessToken(), equals('access_token_123'));
-        expect(await TokenStorage.getRefreshToken(), equals('refresh_token_456'));
-      });
+        test(
+          'logout sends refreshToken in request body and clears local tokens',
+          () async {
+            await TokenStorage.saveTokens(
+              accessToken: 'old_access_token',
+              refreshToken: 'valid_refresh_token_789',
+            );
 
-      test('logout sends refreshToken in request body and clears local tokens', () async {
-        await TokenStorage.saveTokens(
-          accessToken: 'old_access_token',
-          refreshToken: 'valid_refresh_token_789',
+            bool logoutCalled = false;
+            final mockHttp = MockClient((request) async {
+              expect(request.url.path, contains(ApiConfig.authLogout));
+              expect(
+                request.headers['authorization'],
+                isNull,
+                reason: 'Logout endpoint is @Public()',
+              );
+
+              final body = jsonDecode(request.body) as Map<String, dynamic>;
+              expect(body['refreshToken'], equals('valid_refresh_token_789'));
+              logoutCalled = true;
+
+              return http.Response('', 204);
+            });
+
+            final client = ApiClient(httpClient: mockHttp);
+            final authSource = AuthRemoteDataSourceImpl(client: client);
+
+            await authSource.logout();
+
+            expect(logoutCalled, isTrue);
+            expect(await TokenStorage.getAccessToken(), isNull);
+            expect(await TokenStorage.getRefreshToken(), isNull);
+          },
         );
 
-        bool logoutCalled = false;
-        final mockHttp = MockClient((request) async {
-          expect(request.url.path, contains(ApiConfig.authLogout));
-          expect(request.headers['authorization'], isNull, reason: 'Logout endpoint is @Public()');
+        test(
+          'logout clears local tokens even if remote server returns an error',
+          () async {
+            await TokenStorage.saveTokens(
+              accessToken: 'old_access',
+              refreshToken: 'expired_refresh',
+            );
 
-          final body = jsonDecode(request.body) as Map<String, dynamic>;
-          expect(body['refreshToken'], equals('valid_refresh_token_789'));
-          logoutCalled = true;
+            final mockHttp = MockClient((request) async {
+              return http.Response(
+                jsonEncode({'statusCode': 401, 'message': 'Token invalid'}),
+                401,
+              );
+            });
 
-          return http.Response('', 204);
-        });
+            final client = ApiClient(httpClient: mockHttp);
+            final authSource = AuthRemoteDataSourceImpl(client: client);
 
-        final client = ApiClient(httpClient: mockHttp);
-        final authSource = AuthRemoteDataSourceImpl(client: client);
+            await authSource.logout();
 
-        await authSource.logout();
-
-        expect(logoutCalled, isTrue);
-        expect(await TokenStorage.getAccessToken(), isNull);
-        expect(await TokenStorage.getRefreshToken(), isNull);
-      });
-
-      test('logout clears local tokens even if remote server returns an error', () async {
-        await TokenStorage.saveTokens(
-          accessToken: 'old_access',
-          refreshToken: 'expired_refresh',
+            // Must still wipe tokens locally
+            expect(await TokenStorage.getAccessToken(), isNull);
+            expect(await TokenStorage.getRefreshToken(), isNull);
+          },
         );
-
-        final mockHttp = MockClient((request) async {
-          return http.Response(
-            jsonEncode({'statusCode': 401, 'message': 'Token invalid'}),
-            401,
-          );
-        });
-
-        final client = ApiClient(httpClient: mockHttp);
-        final authSource = AuthRemoteDataSourceImpl(client: client);
-
-        await authSource.logout();
-
-        // Must still wipe tokens locally
-        expect(await TokenStorage.getAccessToken(), isNull);
-        expect(await TokenStorage.getRefreshToken(), isNull);
-      });
-    });
+      },
+    );
   });
 }

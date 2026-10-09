@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vexgo_app/core/network/api_client.dart';
+import 'package:vexgo_app/core/network/api_config.dart';
 import 'package:vexgo_app/data/datasources/remote/review_remote_data_source.dart';
 import 'package:vexgo_app/data/models/ticket_model.dart';
 import 'package:vexgo_app/data/repositories/booking_repository.dart';
@@ -131,8 +132,12 @@ class MyTicketsBloc extends Bloc<MyTicketsEvent, MyTicketsState> {
         expectedCancelFeeRate: ticket.cancelFeeRate,
       );
 
+      final payload = cancelResult['data'] is Map<String, dynamic>
+          ? cancelResult['data'] as Map<String, dynamic>
+          : cancelResult;
+
       final refund =
-          (cancelResult['refundAmount'] as num?)?.toInt() ?? event.refundAmount;
+          (payload['refundAmount'] as num?)?.toInt() ?? event.refundAmount;
 
       final updatedTicket = ticket.copyWith(
         status: TicketStatus.cancelled,
@@ -161,7 +166,6 @@ class MyTicketsBloc extends Bloc<MyTicketsEvent, MyTicketsState> {
     }
   }
 
-
   Future<void> _onSubmitReview(
     SubmitTicketReviewEvent event,
     Emitter<MyTicketsState> emit,
@@ -176,9 +180,25 @@ class MyTicketsBloc extends Bloc<MyTicketsEvent, MyTicketsState> {
 
     final ticket = state.tickets[ticketIndex];
 
+    if (ApiConfig.isDemoMode) {
+      final updatedTicket = ticket.copyWith(review: event.review);
+      final updatedList = List<TicketModel>.from(state.tickets);
+      updatedList[ticketIndex] = updatedTicket;
+
+      emit(
+        state.copyWith(
+          tickets: updatedList,
+          successMessage:
+              '[Demo] Đánh giá đã được ghi nhận cục bộ (chế độ thử nghiệm).',
+        ),
+      );
+      return;
+    }
+
     // Try submitting review to backend API if numeric tripId can be parsed
     final rawTripId = ticket.trip.id;
-    final tripId = int.tryParse(rawTripId) ??
+    final tripId =
+        int.tryParse(rawTripId) ??
         int.tryParse(rawTripId.replaceAll(RegExp(r'\D'), '')) ??
         1;
 
@@ -188,21 +208,25 @@ class MyTicketsBloc extends Bloc<MyTicketsEvent, MyTicketsState> {
         rating: event.review.rating.round(),
         comment: event.review.comment,
       );
-    } catch (_) {
-      // Local fallback preserves UX even if offline
+
+      final updatedTicket = ticket.copyWith(review: event.review);
+      final updatedList = List<TicketModel>.from(state.tickets);
+      updatedList[ticketIndex] = updatedTicket;
+
+      emit(
+        state.copyWith(
+          tickets: updatedList,
+          successMessage:
+              'Cảm ơn bạn đã gửi đánh giá cho chuyến đi của nhà xe ${ticket.trip.operatorName}!',
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          errorMessage:
+              'Tính năng đánh giá chuyến đi chưa khả dụng trên máy chủ hiện tại ($e).',
+        ),
+      );
     }
-
-    final updatedTicket = ticket.copyWith(review: event.review);
-
-    final updatedList = List<TicketModel>.from(state.tickets);
-    updatedList[ticketIndex] = updatedTicket;
-
-    emit(
-      state.copyWith(
-        tickets: updatedList,
-        successMessage:
-            'Cảm ơn bạn đã gửi đánh giá cho chuyến đi của nhà xe ${ticket.trip.operatorName}!',
-      ),
-    );
   }
 }

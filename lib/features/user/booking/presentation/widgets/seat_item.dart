@@ -44,7 +44,9 @@ class SeatItem extends StatelessWidget {
     }
 
     // Price string in short (e.g. 290k)
-    final priceShort = '${seat.price ~/ 1000}k';
+    final priceShort = (seat.price != null && seat.price! > 0)
+        ? '${seat.price! ~/ 1000}k'
+        : '';
 
     return GestureDetector(
       onTap: isDisabled ? null : onTap,
@@ -118,7 +120,7 @@ class SeatItem extends StatelessWidget {
 
             // Seat Price
             Text(
-              isBooked ? 'Đã bán' : priceShort,
+              isBooked ? 'Đã bán' : (priceShort.isNotEmpty ? priceShort : '--'),
               style: AppTextStyles.caption.copyWith(
                 color: priceColor,
                 fontSize: 10,

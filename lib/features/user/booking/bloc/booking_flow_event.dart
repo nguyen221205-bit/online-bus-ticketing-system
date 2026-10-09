@@ -15,15 +15,28 @@ class InitBookingFlowEvent extends BookingFlowEvent {
   final TripModel trip;
   final DateTime date;
   final int ticketCount;
+  final String? passengerName;
+  final String? passengerPhone;
+  final String? passengerEmail;
 
   const InitBookingFlowEvent({
     required this.trip,
     required this.date,
     this.ticketCount = 1,
+    this.passengerName,
+    this.passengerPhone,
+    this.passengerEmail,
   });
 
   @override
-  List<Object?> get props => [trip, date, ticketCount];
+  List<Object?> get props => [
+    trip,
+    date,
+    ticketCount,
+    passengerName,
+    passengerPhone,
+    passengerEmail,
+  ];
 }
 
 class ToggleSeatEvent extends BookingFlowEvent {

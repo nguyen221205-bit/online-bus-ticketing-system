@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vexgo_app/core/network/api_config.dart';
 import 'package:vexgo_app/core/network/api_exceptions.dart';
 import 'package:vexgo_app/core/network/api_response.dart';
 import 'package:vexgo_app/data/datasources/remote/seat_remote_data_source.dart';
@@ -196,6 +197,7 @@ void main() {
   );
 
   setUp(() {
+    ApiConfig.isDemoMode = true;
     seatRepo = MockSeatRepositoryWithHoldSpy();
     bookingRepo = MockBookingRepository();
     bloc = BookingFlowBloc(
@@ -205,6 +207,7 @@ void main() {
   });
 
   tearDown(() {
+    ApiConfig.isDemoMode = false;
     bloc.close();
   });
 

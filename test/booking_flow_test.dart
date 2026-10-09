@@ -277,6 +277,16 @@ void main() {
       ),
     );
 
+    // Update passenger info for Step 4 (Finding F: passenger info is now empty by default)
+    bloc.add(
+      const UpdatePassengerInfoEvent(
+        name: 'Nguyễn Văn An',
+        phone: '0987654321',
+        email: 'nguyenvanan@gmail.com',
+      ),
+    );
+    await bloc.stream.firstWhere((s) => s.isPassengerValid);
+
     // Step 4 -> Step 5
     bloc.add(const NextStepEvent());
     await expectLater(
@@ -377,7 +387,8 @@ void main() {
       expect(
         emptyRepo.getSeatLayoutCalled,
         isFalse,
-        reason: 'Mock getSeatLayout must NEVER be called when real trip has empty seats',
+        reason:
+            'Mock getSeatLayout must NEVER be called when real trip has empty seats',
       );
 
       await testBloc.close();

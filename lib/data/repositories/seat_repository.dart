@@ -135,8 +135,8 @@ class RealSeatRepository implements SeatRepository {
   final SeatRemoteDataSource remoteDataSource;
 
   RealSeatRepository({SeatRemoteDataSource? remoteDataSource})
-      : remoteDataSource =
-            remoteDataSource ?? SeatRemoteDataSourceImpl(client: ApiClient());
+    : remoteDataSource =
+          remoteDataSource ?? SeatRemoteDataSourceImpl(client: ApiClient());
 
   @override
   Future<SeatLayoutModel> getSeatLayout(String seatLayoutType) async {
@@ -158,14 +158,13 @@ class RealSeatRepository implements SeatRepository {
     required int tripId,
     required List<int> seatIds,
   }) async {
-    return await remoteDataSource.createSeatHold(
-      tripId: tripId,
-      seatIds: seatIds,
+    throw UnsupportedError(
+      'Chức năng giữ ghế trực tuyến (seat hold) chưa được hỗ trợ bởi máy chủ ở phiên bản hiện tại.',
     );
   }
 
   @override
   Future<bool> releaseSeatHold(String holdToken) async {
-    return await remoteDataSource.releaseSeatHold(holdToken);
+    return true;
   }
 }

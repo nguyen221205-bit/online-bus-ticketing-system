@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:vexgo_app/core/network/api_client.dart';
+import 'package:vexgo_app/core/network/api_config.dart';
 import 'package:vexgo_app/core/utils/json_loader.dart';
 import '../datasources/remote/notification_remote_data_source.dart';
 import '../models/notification_model.dart';
@@ -62,78 +62,43 @@ class HybridNotificationRepository implements NotificationRepository {
 
   @override
   Future<List<NotificationModel>> getNotifications() async {
-    try {
-      final list = await remoteDataSource.getMyNotifications();
-      if (list.isNotEmpty) {
-        return list;
-      }
-      return await mockFallback.getNotifications();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-          '[HybridNotificationRepository] Remote getNotifications failed: $e, fallback to mock',
-        );
-      }
+    if (ApiConfig.isDemoMode) {
       return await mockFallback.getNotifications();
     }
+    // Backend version at HEAD f2edf7f does not provide notification endpoints yet.
+    return const [];
   }
 
   @override
   Future<void> markAsRead(String id) async {
-    try {
-      final parsedId = int.tryParse(id) ?? id;
-      await remoteDataSource.markAsRead(parsedId);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-          '[HybridNotificationRepository] Remote markAsRead failed: $e',
-        );
-      }
-    }
-    try {
+    if (ApiConfig.isDemoMode) {
       await mockFallback.markAsRead(id);
-    } catch (_) {}
+    }
   }
 
   @override
   Future<void> markAllAsRead() async {
-    try {
-      await remoteDataSource.markAllAsRead();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-          '[HybridNotificationRepository] Remote markAllAsRead failed: $e',
-        );
-      }
-    }
-    try {
+    if (ApiConfig.isDemoMode) {
       await mockFallback.markAllAsRead();
-    } catch (_) {}
+    }
   }
 }
 
-/// Real notification repository: 100% remote calls
+/// Real notification repository: 100% real mode.
+/// Since backend at HEAD f2edf7f does not have /notifications, returns empty list without 404 calls.
 class RealNotificationRepository implements NotificationRepository {
-  final NotificationRemoteDataSource remoteDataSource;
+  final NotificationRemoteDataSource? remoteDataSource;
 
-  RealNotificationRepository({NotificationRemoteDataSource? remoteDataSource})
-      : remoteDataSource = remoteDataSource ??
-            NotificationRemoteDataSourceImpl(client: ApiClient());
+  RealNotificationRepository({this.remoteDataSource});
 
   @override
   Future<List<NotificationModel>> getNotifications() async {
-    return await remoteDataSource.getMyNotifications();
+    return const [];
   }
 
   @override
-  Future<void> markAsRead(String id) async {
-    final parsedId = int.tryParse(id) ?? id;
-    await remoteDataSource.markAsRead(parsedId);
-  }
+  Future<void> markAsRead(String id) async {}
 
   @override
-  Future<void> markAllAsRead() async {
-    await remoteDataSource.markAllAsRead();
-  }
+  Future<void> markAllAsRead() async {}
 }
-

@@ -494,9 +494,9 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
                 text: 'QUAY LẠI',
                 type: ButtonType.outline,
                 onPressed: () {
-                  context
-                      .read<AuthBloc>()
-                      .add(const ClearPendingRegistrationEvent());
+                  context.read<AuthBloc>().add(
+                    const ClearPendingRegistrationEvent(),
+                  );
                   setState(() => _isVerifyingOtp = false);
                 },
               ),

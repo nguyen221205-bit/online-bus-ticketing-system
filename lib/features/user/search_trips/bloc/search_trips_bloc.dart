@@ -79,11 +79,7 @@ class SearchTripsBloc extends Bloc<SearchTripsEvent, SearchTripsState> {
     ChangeSelectedDateEvent event,
     Emitter<SearchTripsState> emit,
   ) {
-    emit(
-      state.copyWith(
-        selectedDate: event.newDate,
-      ),
-    );
+    emit(state.copyWith(selectedDate: event.newDate));
     if (state.fromCityId.isNotEmpty && state.toCityId.isNotEmpty) {
       add(
         LoadTripsEvent(

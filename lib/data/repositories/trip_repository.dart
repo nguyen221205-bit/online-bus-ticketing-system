@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/json_loader.dart';
+import '../adapters/city_search_adapter.dart';
 import '../datasources/remote/trip_remote_data_source.dart';
 import '../models/city_model.dart';
 import '../models/operator_model.dart';
@@ -158,10 +159,12 @@ class HybridTripRepository implements TripRepository {
     required String toCityId,
     String? date,
   }) async {
+    final resolvedFrom = CitySearchAdapter.resolveBackendSearchCity(fromCityId);
+    final resolvedTo = CitySearchAdapter.resolveBackendSearchCity(toCityId);
     try {
       return await remoteDataSource.searchTrips(
-        from: fromCityId,
-        to: toCityId,
+        from: resolvedFrom,
+        to: resolvedTo,
         departureDate: date,
       );
     } catch (e) {
@@ -190,8 +193,8 @@ class RealTripRepository implements TripRepository {
   final TripRemoteDataSource remoteDataSource;
 
   RealTripRepository({TripRemoteDataSource? remoteDataSource})
-      : remoteDataSource =
-            remoteDataSource ?? TripRemoteDataSourceImpl(client: ApiClient());
+    : remoteDataSource =
+          remoteDataSource ?? TripRemoteDataSourceImpl(client: ApiClient());
 
   List<CityModel>? _cachedCities;
 
@@ -221,9 +224,11 @@ class RealTripRepository implements TripRepository {
     required String toCityId,
     String? date,
   }) async {
+    final resolvedFrom = CitySearchAdapter.resolveBackendSearchCity(fromCityId);
+    final resolvedTo = CitySearchAdapter.resolveBackendSearchCity(toCityId);
     return await remoteDataSource.searchTrips(
-      from: fromCityId,
-      to: toCityId,
+      from: resolvedFrom,
+      to: resolvedTo,
       departureDate: date,
     );
   }

@@ -226,8 +226,21 @@ class HybridAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<UserModel> updateProfile(UserModel updatedUser) =>
-      mockFallback.updateProfile(updatedUser);
+  Future<UserModel> updateProfile(UserModel updatedUser) async {
+    try {
+      return await remoteDataSource.updateProfile(
+        fullName: updatedUser.hoTen,
+        dateOfBirth: updatedUser.ngaySinh,
+        email: updatedUser.email,
+        citizenId: updatedUser.cccd,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridAuthRepository] Remote updateProfile failed: $e');
+      }
+      return mockFallback.updateProfile(updatedUser);
+    }
+  }
 
   @override
   Future<UserModel> redeemPoints({
@@ -247,8 +260,8 @@ class RealAuthRepository implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
 
   RealAuthRepository({AuthRemoteDataSource? remoteDataSource})
-      : remoteDataSource =
-            remoteDataSource ?? AuthRemoteDataSourceImpl(client: ApiClient());
+    : remoteDataSource =
+          remoteDataSource ?? AuthRemoteDataSourceImpl(client: ApiClient());
 
   @override
   Future<UserModel?> getCurrentUser() => remoteDataSource.getCurrentUser();
@@ -268,18 +281,22 @@ class RealAuthRepository implements AuthRepository {
     required String fullName,
     required String password,
     String? challengeId,
-  }) =>
-      remoteDataSource.verifyOtpAndRegister(
-        phone: phone,
-        otp: otp,
-        fullName: fullName,
-        password: password,
-        challengeId: challengeId,
-      );
+  }) => remoteDataSource.verifyOtpAndRegister(
+    phone: phone,
+    otp: otp,
+    fullName: fullName,
+    password: password,
+    challengeId: challengeId,
+  );
 
   @override
   Future<UserModel> updateProfile(UserModel updatedUser) async {
-    return updatedUser;
+    return await remoteDataSource.updateProfile(
+      fullName: updatedUser.hoTen,
+      dateOfBirth: updatedUser.ngaySinh,
+      email: updatedUser.email,
+      citizenId: updatedUser.cccd,
+    );
   }
 
   @override

@@ -20,10 +20,7 @@ class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
     required int rating,
     String? comment,
   }) async {
-    final body = <String, dynamic>{
-      'tripId': tripId,
-      'rating': rating,
-    };
+    final body = <String, dynamic>{'tripId': tripId, 'rating': rating};
     if (comment != null && comment.isNotEmpty) {
       body['comment'] = comment;
     }

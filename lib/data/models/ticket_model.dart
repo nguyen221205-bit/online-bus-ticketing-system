@@ -266,9 +266,7 @@ class TicketModel extends Equatable {
             json['pickup'] as String? ?? json['pickupPoint'] as String? ?? '',
         pickupAddress: json['pickupAddress'] as String? ?? '',
         dropoffPoint:
-            json['dropoff'] as String? ??
-            json['dropoffPoint'] as String? ??
-            '',
+            json['dropoff'] as String? ?? json['dropoffPoint'] as String? ?? '',
         dropoffAddress: json['dropoffAddress'] as String? ?? '',
       );
     }
@@ -420,7 +418,6 @@ class TicketModel extends Equatable {
       bookingCode: bookingCode ?? this.bookingCode,
     );
   }
-
 
   /// Parse departure date and time into a DateTime object
   DateTime? get departureDateTime {

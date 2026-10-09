@@ -90,7 +90,9 @@ class BookingBottomBar extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 hasSeats
-                    ? CurrencyFormatter.format(state.seatsTotalAmount)
+                    ? (state.seatsTotalAmount != null
+                          ? CurrencyFormatter.format(state.seatsTotalAmount!)
+                          : 'Chưa có giá vé')
                     : '0 đ',
                 style: AppTextStyles.price.copyWith(fontSize: 18),
               ),
@@ -102,7 +104,12 @@ class BookingBottomBar extends StatelessWidget {
           width: 140,
           child: CustomButton(
             text: 'Tiếp tục',
-            onPressed: hasSeats ? onNext : null,
+            onPressed:
+                (hasSeats &&
+                    state.seatsTotalAmount != null &&
+                    state.seatsTotalAmount! > 0)
+                ? onNext
+                : null,
           ),
         ),
       ],

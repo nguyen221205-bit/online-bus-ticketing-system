@@ -57,17 +57,17 @@ class NotificationModel extends Equatable {
       return NotificationCategory.system;
     }
 
-    final id = json['id']?.toString() ??
-        json['notificationId']?.toString() ??
-        '';
+    final id =
+        json['id']?.toString() ?? json['notificationId']?.toString() ?? '';
     final title = json['title'] as String? ?? json['tieuDe'] as String? ?? '';
-    final message = json['message'] as String? ??
+    final message =
+        json['message'] as String? ??
         json['content'] as String? ??
         json['noiDung'] as String? ??
         '';
     final isRead = json['isRead'] as bool? ?? json['daDoc'] as bool? ?? false;
-    final createdAtStr = json['createdAt'] as String? ??
-        json['thoiGian'] as String?;
+    final createdAtStr =
+        json['createdAt'] as String? ?? json['thoiGian'] as String?;
     final createdAt = createdAtStr != null
         ? (DateTime.tryParse(createdAtStr) ?? DateTime.now())
         : DateTime.now();
@@ -87,7 +87,6 @@ class NotificationModel extends Equatable {
       voucherCode: json['voucherCode'] as String?,
     );
   }
-
 
   Map<String, dynamic> toJson() {
     String catStr;

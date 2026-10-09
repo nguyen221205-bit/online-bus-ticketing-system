@@ -9,6 +9,7 @@ import 'package:vexgo_app/data/repositories/seat_repository.dart';
 import 'package:vexgo_app/features/user/booking/bloc/booking_flow_bloc.dart';
 import 'package:vexgo_app/features/user/booking/bloc/booking_flow_event.dart';
 import 'package:vexgo_app/features/user/booking/bloc/booking_flow_state.dart';
+import 'package:vexgo_app/features/user/profile/bloc/auth_bloc.dart';
 import '../steps/step_1_seat_selection.dart';
 import '../steps/step_2_pickup_point.dart';
 import '../steps/step_3_dropoff_point.dart';
@@ -33,6 +34,7 @@ class BookingFlowScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authUser = context.read<AuthBloc>().state.user;
     return BlocProvider(
       create: (context) =>
           BookingFlowBloc(
@@ -43,6 +45,9 @@ class BookingFlowScreen extends StatelessWidget {
               trip: trip,
               date: date,
               ticketCount: ticketCount,
+              passengerName: authUser?.hoTen,
+              passengerPhone: authUser?.soDienThoai,
+              passengerEmail: authUser?.email,
             ),
           ),
       child: const _BookingFlowContent(),

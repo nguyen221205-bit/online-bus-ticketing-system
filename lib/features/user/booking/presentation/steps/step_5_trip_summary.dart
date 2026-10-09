@@ -261,7 +261,7 @@ class Step5TripSummary extends StatelessWidget {
                   context,
                   vouchers: state.availableVouchers,
                   currentVoucher: state.appliedVoucher,
-                  currentOrderAmount: state.seatsTotalAmount,
+                  currentOrderAmount: state.seatsTotalAmount ?? 0,
                   onVoucherSelected: (v) => bloc.add(ApplyVoucherEvent(v)),
                   onVoucherRemoved: () => bloc.add(const RemoveVoucherEvent()),
                 );
@@ -331,7 +331,9 @@ class Step5TripSummary extends StatelessWidget {
                 const SizedBox(height: AppDimensions.md),
                 _buildPriceRow(
                   label: 'Giá vé (${state.selectedSeats.length} chỗ)',
-                  value: CurrencyFormatter.format(state.seatsTotalAmount),
+                  value: state.seatsTotalAmount != null
+                      ? CurrencyFormatter.format(state.seatsTotalAmount!)
+                      : 'Chưa có giá vé',
                 ),
                 const SizedBox(height: 6),
                 _buildPriceRow(
@@ -352,7 +354,9 @@ class Step5TripSummary extends StatelessWidget {
                 const SizedBox(height: AppDimensions.sm),
                 _buildPriceRow(
                   label: 'Tổng tiền cần thanh toán',
-                  value: CurrencyFormatter.format(state.finalAmount),
+                  value: state.finalAmount != null
+                      ? CurrencyFormatter.format(state.finalAmount!)
+                      : 'Chưa có giá vé',
                   valueColor: AppColors.secondary,
                   isTotal: true,
                 ),

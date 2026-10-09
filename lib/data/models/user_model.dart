@@ -63,17 +63,45 @@ class UserModel extends Equatable {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final historyJson = json['pointHistory'] as List<dynamic>? ?? [];
+    final accountId =
+        (json['taiKhoanId'] ?? json['accountId'] ?? json['id'] as num?)
+            ?.toInt() ??
+        0;
+    final customerCode =
+        json['maKhachHang'] as String? ??
+        json['customerCode'] as String? ??
+        (json['customerId'] != null ? 'KH${json['customerId']}' : '');
+    final fullName =
+        json['hoTen'] as String? ?? json['fullName'] as String? ?? '';
+    final phone =
+        json['soDienThoai'] as String? ??
+        json['phoneNumber'] as String? ??
+        json['phone'] as String? ??
+        '';
+    final citizenId = json['cccd'] as String? ?? json['citizenId'] as String?;
+    final dob = json['ngaySinh'] as String? ?? json['dateOfBirth'] as String?;
+    final email = json['email'] as String?;
+    final points =
+        (json['diemTichLuy'] ?? json['loyaltyPoints'] as num?)?.toInt() ?? 0;
+    final status =
+        json['trangThai'] as String? ??
+        json['status'] as String? ??
+        'HOAT_DONG';
+
     return UserModel(
-      taiKhoanId: json['taiKhoanId'] as int? ?? 1,
-      maKhachHang: json['maKhachHang'] as String? ?? 'KH-001',
-      hoTen: json['hoTen'] as String? ?? 'Khách Hàng',
-      soDienThoai: json['soDienThoai'] as String? ?? '',
-      email: json['email'] as String?,
-      cccd: json['cccd'] as String?,
-      ngaySinh: json['ngaySinh'] as String?,
-      daXacThucSoDienThoai: json['daXacThucSoDienThoai'] as bool? ?? true,
-      trangThai: json['trangThai'] as String? ?? 'HOAT_DONG',
-      diemTichLuy: json['diemTichLuy'] as int? ?? 0,
+      taiKhoanId: accountId,
+      maKhachHang: customerCode,
+      hoTen: fullName,
+      soDienThoai: phone,
+      email: email,
+      cccd: citizenId,
+      ngaySinh: dob,
+      daXacThucSoDienThoai:
+          json['daXacThucSoDienThoai'] as bool? ??
+          json['phoneVerified'] as bool? ??
+          true,
+      trangThai: status,
+      diemTichLuy: points,
       hangThanhVien: json['hangThanhVien'] as String? ?? 'BẠC',
       diemToiHangTiepTheo: json['diemToiHangTiepTheo'] as int? ?? 1000,
       pointHistory: historyJson

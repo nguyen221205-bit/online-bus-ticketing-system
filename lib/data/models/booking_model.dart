@@ -25,6 +25,18 @@ class BookingModel extends Equatable {
   final String? holdToken;
   final DateTime? createdAt;
   final DateTime? expiresAt;
+  final int? orderId;
+  final String? orderCode;
+  final int ticketCount;
+  final String? route;
+  final String? origin;
+  final String? destination;
+  final String? departureTime;
+  final String? busCompanyName;
+  final String? vehicleType;
+  final String? paymentStatus;
+  final String? paymentMethod;
+  final List<TicketModel> tickets;
 
   const BookingModel({
     required this.bookingId,
@@ -43,6 +55,18 @@ class BookingModel extends Equatable {
     this.holdToken,
     this.createdAt,
     this.expiresAt,
+    this.orderId,
+    this.orderCode,
+    this.ticketCount = 0,
+    this.route,
+    this.origin,
+    this.destination,
+    this.departureTime,
+    this.busCompanyName,
+    this.vehicleType,
+    this.paymentStatus,
+    this.paymentMethod,
+    this.tickets = const [],
   });
 
   BookingModel copyWith({
@@ -62,6 +86,18 @@ class BookingModel extends Equatable {
     String? holdToken,
     DateTime? createdAt,
     DateTime? expiresAt,
+    int? orderId,
+    String? orderCode,
+    int? ticketCount,
+    String? route,
+    String? origin,
+    String? destination,
+    String? departureTime,
+    String? busCompanyName,
+    String? vehicleType,
+    String? paymentStatus,
+    String? paymentMethod,
+    List<TicketModel>? tickets,
   }) {
     return BookingModel(
       bookingId: bookingId ?? this.bookingId,
@@ -80,6 +116,18 @@ class BookingModel extends Equatable {
       holdToken: holdToken ?? this.holdToken,
       createdAt: createdAt ?? this.createdAt,
       expiresAt: expiresAt ?? this.expiresAt,
+      orderId: orderId ?? this.orderId,
+      orderCode: orderCode ?? this.orderCode,
+      ticketCount: ticketCount ?? this.ticketCount,
+      route: route ?? this.route,
+      origin: origin ?? this.origin,
+      destination: destination ?? this.destination,
+      departureTime: departureTime ?? this.departureTime,
+      busCompanyName: busCompanyName ?? this.busCompanyName,
+      vehicleType: vehicleType ?? this.vehicleType,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      tickets: tickets ?? this.tickets,
     );
   }
 
@@ -103,7 +151,11 @@ class BookingModel extends Equatable {
 
     // Parse seats (names)
     List<String> parsedSeats = [];
-    if (json['seats'] is List) {
+    if (json['seatNumbers'] is List) {
+      parsedSeats = (json['seatNumbers'] as List)
+          .map((e) => e.toString())
+          .toList();
+    } else if (json['seats'] is List) {
       parsedSeats = (json['seats'] as List).map((e) => e.toString()).toList();
     }
 
@@ -114,6 +166,38 @@ class BookingModel extends Equatable {
           .map((e) => (e as num).toInt())
           .toList();
     }
+
+    // Parse route and endpoints
+    final origin = json['origin'] as String? ?? json['fromCityName'] as String?;
+    final destination =
+        json['destination'] as String? ?? json['toCityName'] as String?;
+    final route =
+        json['route'] as String? ??
+        ((origin != null && destination != null)
+            ? '$origin - $destination'
+            : null);
+
+    // Parse tickets
+    List<TicketModel> parsedTickets = [];
+    if (json['tickets'] is List) {
+      parsedTickets = (json['tickets'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((t) => TicketModel.fromJson(t))
+          .toList();
+    }
+
+    // Parse pickup and dropoff with fallback
+    String pickupPoint = json['pickupPoint'] as String? ?? '';
+    if (pickupPoint.isEmpty &&
+        json['tickets'] is List &&
+        (json['tickets'] as List).isNotEmpty) {
+      final first = (json['tickets'] as List).first;
+      if (first is Map<String, dynamic>) {
+        pickupPoint =
+            first['pickup'] as String? ?? first['diemDon'] as String? ?? '';
+      }
+    }
+    String dropoffPoint = json['dropoffPoint'] as String? ?? destination ?? '';
 
     // Parse contact
     PassengerInfo parsedContact;
@@ -137,6 +221,8 @@ class BookingModel extends Equatable {
     final originalAmount =
         (json['originalAmount'] as num?)?.toInt() ?? totalAmount;
     final discountAmount = (json['discountAmount'] as num?)?.toInt() ?? 0;
+    final ticketCount =
+        (json['ticketCount'] as num?)?.toInt() ?? parsedTickets.length;
 
     return BookingModel(
       bookingId:
@@ -148,8 +234,8 @@ class BookingModel extends Equatable {
       tripId: (json['tripId'] as num?)?.toInt() ?? 0,
       status: parseStatus(json['status'] as String?),
       contact: parsedContact,
-      pickupPoint: json['pickupPoint'] as String? ?? '',
-      dropoffPoint: json['dropoffPoint'] as String? ?? '',
+      pickupPoint: pickupPoint,
+      dropoffPoint: dropoffPoint,
       seats: parsedSeats,
       seatIds: parsedSeatIds,
       totalAmount: totalAmount,
@@ -163,6 +249,19 @@ class BookingModel extends Equatable {
       expiresAt: json['expiresAt'] != null
           ? DateTime.tryParse(json['expiresAt'] as String)
           : null,
+      orderId: (json['orderId'] as num?)?.toInt(),
+      orderCode: json['orderCode'] as String?,
+      ticketCount: ticketCount > 0 ? ticketCount : parsedSeats.length,
+      route: route,
+      origin: origin,
+      destination: destination,
+      departureTime: json['departureTime'] as String?,
+      busCompanyName:
+          json['busCompanyName'] as String? ?? json['operatorName'] as String?,
+      vehicleType: json['vehicleType'] as String?,
+      paymentStatus: json['paymentStatus'] as String?,
+      paymentMethod: json['paymentMethod'] as String?,
+      tickets: parsedTickets,
     );
   }
 

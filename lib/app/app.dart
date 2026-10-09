@@ -41,8 +41,9 @@ class VexGoApp extends StatelessWidget {
               isDemo ? MockAuthRepository() : RealAuthRepository(),
         ),
         RepositoryProvider<NotificationRepository>(
-          create: (context) =>
-              isDemo ? MockNotificationRepository() : RealNotificationRepository(),
+          create: (context) => isDemo
+              ? MockNotificationRepository()
+              : RealNotificationRepository(),
         ),
       ],
       child: MultiBlocProvider(

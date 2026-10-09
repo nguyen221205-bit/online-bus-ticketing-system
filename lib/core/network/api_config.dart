@@ -14,8 +14,10 @@ class ApiConfig {
   /// Explicit demo mode switch per Lead PR #5 Finding 4 review.
   /// When true: uses Mock Repositories offline.
   /// When false (default): runs Real Mode 100% against live backend API without silent fallback.
-  static const bool _envDemoMode =
-      bool.fromEnvironment('DEMO_MODE', defaultValue: false);
+  static const bool _envDemoMode = bool.fromEnvironment(
+    'DEMO_MODE',
+    defaultValue: false,
+  );
   static bool isDemoMode = _envDemoMode;
 
   /// When running on physical Android device with `adb reverse tcp:4000 tcp:4000`,
@@ -130,4 +132,3 @@ class ApiConfig {
   static String busCompanyDetail(dynamic companyId) =>
       '/bus-companies/$companyId';
 }
-
