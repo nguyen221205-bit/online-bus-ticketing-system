@@ -8,12 +8,13 @@ import '../models/user_model.dart';
 abstract class AuthRepository {
   Future<UserModel?> getCurrentUser();
   Future<UserModel> login({required String phone, required String password});
-  Future<void> sendOtp({required String phone});
+  Future<String> sendOtp({required String phone});
   Future<UserModel> verifyOtpAndRegister({
     required String phone,
     required String otp,
     required String fullName,
     required String password,
+    String? challengeId,
   });
   Future<UserModel> updateProfile(UserModel updatedUser);
   Future<UserModel> redeemPoints({
@@ -69,12 +70,12 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> sendOtp({required String phone}) async {
+  Future<String> sendOtp({required String phone}) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (phone.length < 9) {
       throw Exception('Số điện thoại không hợp lệ.');
     }
-    // In mock, OTP is always sent (e.g. 123456)
+    return 'mock-challenge-${DateTime.now().millisecondsSinceEpoch}';
   }
 
   @override
@@ -83,6 +84,7 @@ class MockAuthRepository implements AuthRepository {
     required String otp,
     required String fullName,
     required String password,
+    String? challengeId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 600));
     if (otp != '123456' && otp.length != 6) {
@@ -188,9 +190,9 @@ class HybridAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> sendOtp({required String phone}) async {
+  Future<String> sendOtp({required String phone}) async {
     try {
-      await remoteDataSource.sendOtp(phone: phone);
+      return await remoteDataSource.sendOtp(phone: phone);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[HybridAuthRepository] Remote sendOtp failed: $e');
@@ -205,6 +207,7 @@ class HybridAuthRepository implements AuthRepository {
     required String otp,
     required String fullName,
     required String password,
+    String? challengeId,
   }) async {
     try {
       return await remoteDataSource.verifyOtpAndRegister(
@@ -212,6 +215,7 @@ class HybridAuthRepository implements AuthRepository {
         otp: otp,
         fullName: fullName,
         password: password,
+        challengeId: challengeId,
       );
     } catch (e) {
       if (kDebugMode) {
@@ -233,6 +237,60 @@ class HybridAuthRepository implements AuthRepository {
     pointsToRedeem: pointsToRedeem,
     rewardTitle: rewardTitle,
   );
+
+  @override
+  Future<void> logout() => remoteDataSource.logout();
+}
+
+/// Real auth repository: 100% remote calls to backend authentication
+class RealAuthRepository implements AuthRepository {
+  final AuthRemoteDataSource remoteDataSource;
+
+  RealAuthRepository({AuthRemoteDataSource? remoteDataSource})
+      : remoteDataSource =
+            remoteDataSource ?? AuthRemoteDataSourceImpl(client: ApiClient());
+
+  @override
+  Future<UserModel?> getCurrentUser() => remoteDataSource.getCurrentUser();
+
+  @override
+  Future<UserModel> login({required String phone, required String password}) =>
+      remoteDataSource.login(phone: phone, password: password);
+
+  @override
+  Future<String> sendOtp({required String phone}) =>
+      remoteDataSource.sendOtp(phone: phone);
+
+  @override
+  Future<UserModel> verifyOtpAndRegister({
+    required String phone,
+    required String otp,
+    required String fullName,
+    required String password,
+    String? challengeId,
+  }) =>
+      remoteDataSource.verifyOtpAndRegister(
+        phone: phone,
+        otp: otp,
+        fullName: fullName,
+        password: password,
+        challengeId: challengeId,
+      );
+
+  @override
+  Future<UserModel> updateProfile(UserModel updatedUser) async {
+    return updatedUser;
+  }
+
+  @override
+  Future<UserModel> redeemPoints({
+    required int pointsToRedeem,
+    required String rewardTitle,
+  }) async {
+    throw UnsupportedError(
+      'Chương trình đổi điểm thưởng chưa được hỗ trợ trên môi trường máy chủ thật.',
+    );
+  }
 
   @override
   Future<void> logout() => remoteDataSource.logout();

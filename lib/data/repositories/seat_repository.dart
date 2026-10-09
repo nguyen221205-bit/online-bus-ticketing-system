@@ -129,3 +129,43 @@ class HybridSeatRepository implements SeatRepository {
     }
   }
 }
+
+/// Real seat repository: 100% remote calls, no silent mock fallback
+class RealSeatRepository implements SeatRepository {
+  final SeatRemoteDataSource remoteDataSource;
+
+  RealSeatRepository({SeatRemoteDataSource? remoteDataSource})
+      : remoteDataSource =
+            remoteDataSource ?? SeatRemoteDataSourceImpl(client: ApiClient());
+
+  @override
+  Future<SeatLayoutModel> getSeatLayout(String seatLayoutType) async {
+    return SeatLayoutModel(
+      vehicleType: seatLayoutType,
+      hasTwoFloors: false,
+      lowerFloor: const [],
+      upperFloor: const [],
+    );
+  }
+
+  @override
+  Future<List<SeatModel>> getTripSeats(dynamic tripId) async {
+    return await remoteDataSource.getTripSeats(tripId);
+  }
+
+  @override
+  Future<SeatHoldModel> createSeatHold({
+    required int tripId,
+    required List<int> seatIds,
+  }) async {
+    return await remoteDataSource.createSeatHold(
+      tripId: tripId,
+      seatIds: seatIds,
+    );
+  }
+
+  @override
+  Future<bool> releaseSeatHold(String holdToken) async {
+    return await remoteDataSource.releaseSeatHold(holdToken);
+  }
+}

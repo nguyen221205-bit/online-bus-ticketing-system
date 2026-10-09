@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_config.dart';
 import '../../core/network/api_exceptions.dart';
 import '../../core/utils/json_loader.dart';
 import '../../core/utils/payment_provider_mapper.dart';
 import '../datasources/remote/booking_remote_data_source.dart';
 import '../datasources/remote/payment_remote_data_source.dart';
+import '../datasources/remote/ticket_remote_data_source.dart';
 import '../models/booking_model.dart';
 import '../models/booking_quote_model.dart';
 import '../models/notification_model.dart';
@@ -61,6 +63,18 @@ abstract class BookingRepository {
   });
 
   Future<PaymentTransactionModel> getPaymentStatus(dynamic paymentId);
+
+  Future<Map<String, dynamic>> cancelTicket({
+    required String ticketCode,
+    required String phoneNumber,
+    String? reason,
+    required double expectedCancelFeeRate,
+  });
+
+  Future<TicketModel?> lookupTicket({
+    required String ticketCode,
+    required String phoneNumber,
+  });
 }
 
 class MockBookingRepository implements BookingRepository {
@@ -283,17 +297,58 @@ class MockBookingRepository implements BookingRepository {
       paidAt: DateTime.now(),
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> cancelTicket({
+    required String ticketCode,
+    required String phoneNumber,
+    String? reason,
+    required double expectedCancelFeeRate,
+  }) async {
+    final tickets = await getMyTickets();
+    final index = tickets.indexWhere((t) => t.ticketCode == ticketCode);
+    if (index >= 0) {
+      final t = tickets[index];
+      final fee = (t.finalAmount * expectedCancelFeeRate).round();
+      final refund = t.finalAmount - fee;
+      final updated = t.copyWith(
+        status: TicketStatus.cancelled,
+        cancelReason: reason,
+        refundAmount: refund,
+      );
+      _cachedTickets![index] = updated;
+      return {'success': true, 'refundAmount': refund, 'cancelFee': fee};
+    }
+    return {'success': true};
+  }
+
+  @override
+  Future<TicketModel?> lookupTicket({
+    required String ticketCode,
+    required String phoneNumber,
+  }) async {
+    final tickets = await getMyTickets();
+    try {
+      return tickets.firstWhere(
+        (t) => t.ticketCode == ticketCode,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// Hybrid booking repository: calls backend APIs, fallbacks to mock if offline
 class HybridBookingRepository implements BookingRepository {
   final BookingRemoteDataSource remoteBookingDataSource;
   final PaymentRemoteDataSource remotePaymentDataSource;
+  final TicketRemoteDataSource remoteTicketDataSource;
   final MockBookingRepository mockFallback;
 
   HybridBookingRepository({
     BookingRemoteDataSource? remoteBookingDataSource,
     PaymentRemoteDataSource? remotePaymentDataSource,
+    TicketRemoteDataSource? remoteTicketDataSource,
     MockBookingRepository? mockFallback,
   }) : remoteBookingDataSource =
            remoteBookingDataSource ??
@@ -301,17 +356,55 @@ class HybridBookingRepository implements BookingRepository {
        remotePaymentDataSource =
            remotePaymentDataSource ??
            PaymentRemoteDataSourceImpl(client: ApiClient()),
+       remoteTicketDataSource =
+           remoteTicketDataSource ??
+           TicketRemoteDataSourceImpl(client: ApiClient()),
        mockFallback = mockFallback ?? MockBookingRepository();
 
   @override
   Future<List<VoucherModel>> getVouchers() => mockFallback.getVouchers();
 
   @override
-  Future<List<TicketModel>> getMyTickets() => mockFallback.getMyTickets();
+  Future<List<TicketModel>> getMyTickets() async {
+    try {
+      final tickets = await remoteTicketDataSource.getCustomerTickets();
+      if (tickets.isNotEmpty || !ApiConfig.isDemoMode) {
+        return tickets;
+      }
+      return await mockFallback.getMyTickets();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HybridBookingRepository] Remote getMyTickets failed: $e',
+        );
+      }
+      if (ApiConfig.isDemoMode) {
+        return await mockFallback.getMyTickets();
+      }
+      rethrow;
+    }
+  }
 
   @override
-  Future<TicketModel?> getTicketById(String id) =>
-      mockFallback.getTicketById(id);
+  Future<TicketModel?> getTicketById(String id) async {
+    try {
+      final parsedId = int.tryParse(id);
+      if (parsedId != null) {
+        return await remoteTicketDataSource.getCustomerTicketById(parsedId);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HybridBookingRepository] Remote getTicketById failed: $e');
+      }
+      if (!ApiConfig.isDemoMode) {
+        rethrow;
+      }
+    }
+    if (ApiConfig.isDemoMode) {
+      return mockFallback.getTicketById(id);
+    }
+    return null;
+  }
 
   @override
   Future<List<NotificationModel>> getNotifications() =>
@@ -450,14 +543,17 @@ class HybridBookingRepository implements BookingRepository {
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-          '[HybridBookingRepository] Remote quote failed, fallback to mock: $e',
+          '[HybridBookingRepository] Remote quote failed: $e',
         );
       }
-      return mockFallback.getBookingQuote(
-        tripId: tripId,
-        seatIds: seatIds,
-        promotionCode: promotionCode,
-      );
+      if (ApiConfig.isDemoMode) {
+        return mockFallback.getBookingQuote(
+          tripId: tripId,
+          seatIds: seatIds,
+          promotionCode: promotionCode,
+        );
+      }
+      rethrow;
     }
   }
 
@@ -478,15 +574,18 @@ class HybridBookingRepository implements BookingRepository {
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-          '[HybridBookingRepository] Remote promo validation failed, fallback to mock: $e',
+          '[HybridBookingRepository] Remote promo validation failed: $e',
         );
       }
-      return mockFallback.validatePromotion(
-        code: code,
-        tripId: tripId,
-        seatCount: seatCount,
-        totalAmount: totalAmount,
-      );
+      if (ApiConfig.isDemoMode) {
+        return mockFallback.validatePromotion(
+          code: code,
+          tripId: tripId,
+          seatCount: seatCount,
+          totalAmount: totalAmount,
+        );
+      }
+      rethrow;
     }
   }
 
@@ -559,4 +658,313 @@ class HybridBookingRepository implements BookingRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> cancelTicket({
+    required String ticketCode,
+    required String phoneNumber,
+    String? reason,
+    required double expectedCancelFeeRate,
+  }) async {
+    try {
+      final res = await remoteTicketDataSource.cancelTicket(
+        ticketCode: ticketCode,
+        phoneNumber: phoneNumber,
+        reason: reason,
+        expectedCancelFeeRate: expectedCancelFeeRate,
+      );
+      if (ApiConfig.isDemoMode) {
+        try {
+          await mockFallback.cancelTicket(
+            ticketCode: ticketCode,
+            phoneNumber: phoneNumber,
+            reason: reason,
+            expectedCancelFeeRate: expectedCancelFeeRate,
+          );
+        } catch (_) {}
+      }
+      return res;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HybridBookingRepository] Remote cancelTicket failed: $e',
+        );
+      }
+      if (ApiConfig.isDemoMode) {
+        return await mockFallback.cancelTicket(
+          ticketCode: ticketCode,
+          phoneNumber: phoneNumber,
+          reason: reason,
+          expectedCancelFeeRate: expectedCancelFeeRate,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<TicketModel?> lookupTicket({
+    required String ticketCode,
+    required String phoneNumber,
+  }) async {
+    try {
+      return await remoteTicketDataSource.lookupTicket(
+        ticketCode: ticketCode,
+        phoneNumber: phoneNumber,
+      );
+    } catch (e) {
+      if (ApiConfig.isDemoMode) {
+        return await mockFallback.lookupTicket(
+          ticketCode: ticketCode,
+          phoneNumber: phoneNumber,
+        );
+      }
+      rethrow;
+    }
+  }
 }
+
+/// Real booking repository: pure remote backend calls, no mock fallbacks
+class RealBookingRepository implements BookingRepository {
+  final BookingRemoteDataSource remoteBookingDataSource;
+  final PaymentRemoteDataSource remotePaymentDataSource;
+  final TicketRemoteDataSource remoteTicketDataSource;
+
+  RealBookingRepository({
+    BookingRemoteDataSource? remoteBookingDataSource,
+    PaymentRemoteDataSource? remotePaymentDataSource,
+    TicketRemoteDataSource? remoteTicketDataSource,
+  })  : remoteBookingDataSource =
+            remoteBookingDataSource ??
+            BookingRemoteDataSourceImpl(client: ApiClient()),
+        remotePaymentDataSource =
+            remotePaymentDataSource ??
+            PaymentRemoteDataSourceImpl(client: ApiClient()),
+        remoteTicketDataSource =
+            remoteTicketDataSource ??
+            TicketRemoteDataSourceImpl(client: ApiClient());
+
+  @override
+  Future<List<VoucherModel>> getVouchers() async => const [];
+
+  @override
+  Future<List<TicketModel>> getMyTickets() async {
+    return await remoteTicketDataSource.getCustomerTickets();
+  }
+
+  @override
+  Future<TicketModel?> getTicketById(String id) async {
+    final parsedId = int.tryParse(id);
+    if (parsedId == null) return null;
+    return await remoteTicketDataSource.getCustomerTicketById(parsedId);
+  }
+
+  @override
+  Future<List<NotificationModel>> getNotifications() async => const [];
+
+  @override
+  Future<TicketModel> createBooking({
+    required TicketTripSummary trip,
+    required List<String> seats,
+    required int totalAmount,
+    required int discountAmount,
+    required int finalAmount,
+    required String paymentMethod,
+    required PassengerInfo passenger,
+    List<int>? seatIds,
+    String? holdToken,
+    String? promotionCode,
+  }) async {
+    final tripId = int.tryParse(trip.id);
+    if (tripId == null || tripId <= 0) {
+      throw ArgumentError('Mã chuyến đi không hợp lệ (${trip.id})');
+    }
+
+    final resolvedSeatIds =
+        seatIds ?? seats.map((s) => int.tryParse(s)).whereType<int>().toList();
+
+    if (resolvedSeatIds.length != seats.length ||
+        resolvedSeatIds.isEmpty ||
+        resolvedSeatIds.any((id) => id <= 0)) {
+      throw ArgumentError('Danh sách ghế không hợp lệ ($seats)');
+    }
+
+    final booking = await remoteBookingDataSource.createBooking(
+      tripId: tripId,
+      seatIds: resolvedSeatIds,
+      pickupPoint: trip.pickupPoint,
+      dropoffPoint: trip.dropoffPoint,
+      contact: passenger,
+      holdToken: holdToken,
+      promotionCode: promotionCode,
+    );
+
+    final backendProvider = PaymentProviderMapper.toBackendProvider(
+      paymentMethod,
+    );
+    final payment = await remotePaymentDataSource.createPayment(
+      bookingId: booking.bookingId,
+      provider: backendProvider,
+    );
+
+    final paymentStatus = await remotePaymentDataSource.getPaymentStatus(
+      payment.paymentId,
+    );
+
+    final resolvedPaymentId = paymentStatus.paymentId > 0
+        ? paymentStatus.paymentId
+        : payment.paymentId;
+
+    if (paymentStatus.isFailed) {
+      throw PaymentFailedException(
+        message:
+            paymentStatus.failureReason ?? 'Giao dịch thanh toán thất bại.',
+        failureReason: paymentStatus.failureReason,
+        paymentId: resolvedPaymentId,
+      );
+    }
+
+    if (paymentStatus.isPending) {
+      throw PaymentPendingException(
+        message: 'Giao dịch thanh toán đang được xử lý hoặc chưa hoàn tất.',
+        paymentId: resolvedPaymentId,
+        paymentUrl: paymentStatus.paymentUrl,
+        qrCodeUrl: paymentStatus.qrCodeUrl,
+        deeplink: paymentStatus.deeplink,
+      );
+    }
+
+    if (!paymentStatus.isSuccess) {
+      throw PaymentFailedException(
+        message:
+            'Trạng thái thanh toán không hợp lệ: ${paymentStatus.status.name}',
+        paymentId: resolvedPaymentId,
+      );
+    }
+
+    final now = DateTime.now();
+    final bookingDateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+    final authoritativeTotal = booking.originalAmount > 0
+        ? booking.originalAmount
+        : (booking.totalAmount + booking.discountAmount);
+    final authoritativeDiscount = booking.discountAmount;
+    final authoritativeFinal = booking.totalAmount;
+
+    return TicketModel(
+      id: 'TKT_${booking.bookingCode}',
+      ticketCode: booking.bookingCode,
+      status: TicketStatus.upcoming,
+      bookingDate: bookingDateStr,
+      trip: trip,
+      seats: booking.seats.isNotEmpty ? booking.seats : seats,
+      totalAmount: authoritativeTotal,
+      discountAmount: authoritativeDiscount,
+      finalAmount: authoritativeFinal,
+      paymentMethod: paymentMethod,
+      passenger: passenger,
+      licensePlate: null,
+      driverPhone: null,
+    );
+  }
+
+  @override
+  Future<BookingQuoteModel> getBookingQuote({
+    required int tripId,
+    required List<int> seatIds,
+    String? promotionCode,
+  }) {
+    return remoteBookingDataSource.getBookingQuote(
+      tripId: tripId,
+      seatIds: seatIds,
+      promotionCode: promotionCode,
+    );
+  }
+
+  @override
+  Future<PromotionValidationModel> validatePromotion({
+    required String code,
+    required int tripId,
+    required int seatCount,
+    required int totalAmount,
+  }) {
+    return remoteBookingDataSource.validatePromotion(
+      code: code,
+      tripId: tripId,
+      seatCount: seatCount,
+      totalAmount: totalAmount,
+    );
+  }
+
+  @override
+  Future<BookingModel> createApiBooking({
+    required int tripId,
+    required List<int> seatIds,
+    required String pickupPoint,
+    required String dropoffPoint,
+    required PassengerInfo contact,
+    String? promotionCode,
+    String? holdToken,
+  }) {
+    if (tripId <= 0) {
+      throw ArgumentError('Mã chuyến đi không hợp lệ ($tripId)');
+    }
+    if (seatIds.isEmpty || seatIds.any((id) => id <= 0)) {
+      throw ArgumentError('Danh sách ghế không hợp lệ ($seatIds)');
+    }
+    return remoteBookingDataSource.createBooking(
+      tripId: tripId,
+      seatIds: seatIds,
+      pickupPoint: pickupPoint,
+      dropoffPoint: dropoffPoint,
+      contact: contact,
+      promotionCode: promotionCode,
+      holdToken: holdToken,
+    );
+  }
+
+  @override
+  Future<PaymentTransactionModel> createPayment({
+    required int bookingId,
+    required String provider,
+  }) {
+    return remotePaymentDataSource.createPayment(
+      bookingId: bookingId,
+      provider: PaymentProviderMapper.toBackendProvider(provider),
+    );
+  }
+
+  @override
+  Future<PaymentTransactionModel> getPaymentStatus(dynamic paymentId) {
+    return remotePaymentDataSource.getPaymentStatus(paymentId);
+  }
+
+  @override
+  Future<Map<String, dynamic>> cancelTicket({
+    required String ticketCode,
+    required String phoneNumber,
+    String? reason,
+    required double expectedCancelFeeRate,
+  }) {
+    return remoteTicketDataSource.cancelTicket(
+      ticketCode: ticketCode,
+      phoneNumber: phoneNumber,
+      reason: reason,
+      expectedCancelFeeRate: expectedCancelFeeRate,
+    );
+  }
+
+  @override
+  Future<TicketModel?> lookupTicket({
+    required String ticketCode,
+    required String phoneNumber,
+  }) {
+    return remoteTicketDataSource.lookupTicket(
+      ticketCode: ticketCode,
+      phoneNumber: phoneNumber,
+    );
+  }
+}
+
+

@@ -493,7 +493,12 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
               child: CustomButton(
                 text: 'QUAY LẠI',
                 type: ButtonType.outline,
-                onPressed: () => setState(() => _isVerifyingOtp = false),
+                onPressed: () {
+                  context
+                      .read<AuthBloc>()
+                      .add(const ClearPendingRegistrationEvent());
+                  setState(() => _isVerifyingOtp = false);
+                },
               ),
             ),
             const SizedBox(width: AppDimensions.md),

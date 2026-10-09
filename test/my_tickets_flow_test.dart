@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vexgo_app/data/models/review_model.dart';
 import 'package:vexgo_app/data/models/ticket_model.dart';
+import 'package:vexgo_app/data/repositories/booking_repository.dart';
 import 'package:vexgo_app/features/user/my_bookings/bloc/my_tickets_bloc.dart';
 import 'package:vexgo_app/features/user/my_bookings/bloc/my_tickets_event.dart';
 import 'package:vexgo_app/features/user/my_bookings/bloc/my_tickets_state.dart';
@@ -86,7 +87,7 @@ void main() {
     );
 
     setUp(() {
-      bloc = MyTicketsBloc();
+      bloc = MyTicketsBloc(bookingRepository: MockBookingRepository());
     });
 
     tearDown(() {

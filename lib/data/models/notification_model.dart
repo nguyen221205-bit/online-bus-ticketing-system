@@ -47,28 +47,47 @@ class NotificationModel extends Equatable {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     NotificationCategory parseCategory(String? cat) {
-      switch (cat?.toUpperCase()) {
-        case 'TRIP':
-          return NotificationCategory.trip;
-        case 'PROMO':
-          return NotificationCategory.promo;
-        case 'SYSTEM':
-        default:
-          return NotificationCategory.system;
+      final s = cat?.toUpperCase() ?? '';
+      if (s == 'TRIP' || s == 'CHUYEN_XE') {
+        return NotificationCategory.trip;
       }
+      if (s == 'PROMO' || s == 'KHUYEN_MAI') {
+        return NotificationCategory.promo;
+      }
+      return NotificationCategory.system;
     }
 
+    final id = json['id']?.toString() ??
+        json['notificationId']?.toString() ??
+        '';
+    final title = json['title'] as String? ?? json['tieuDe'] as String? ?? '';
+    final message = json['message'] as String? ??
+        json['content'] as String? ??
+        json['noiDung'] as String? ??
+        '';
+    final isRead = json['isRead'] as bool? ?? json['daDoc'] as bool? ?? false;
+    final createdAtStr = json['createdAt'] as String? ??
+        json['thoiGian'] as String?;
+    final createdAt = createdAtStr != null
+        ? (DateTime.tryParse(createdAtStr) ?? DateTime.now())
+        : DateTime.now();
+
     return NotificationModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      message: json['message'] as String,
-      category: parseCategory(json['category'] as String?),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      isRead: json['isRead'] as bool? ?? false,
+      id: id,
+      title: title,
+      message: message,
+      category: parseCategory(
+        json['category'] as String? ??
+            json['type'] as String? ??
+            json['trangThai'] as String?,
+      ),
+      createdAt: createdAt,
+      isRead: isRead,
       ticketCode: json['ticketCode'] as String?,
       voucherCode: json['voucherCode'] as String?,
     );
   }
+
 
   Map<String, dynamic> toJson() {
     String catStr;

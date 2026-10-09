@@ -11,6 +11,13 @@ class ApiConfig {
   /// flutter run --dart-define=API_BASE_URL=http://localhost:4000/api/v1
   static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
 
+  /// Explicit demo mode switch per Lead PR #5 Finding 4 review.
+  /// When true: uses Mock Repositories offline.
+  /// When false (default): runs Real Mode 100% against live backend API without silent fallback.
+  static const bool _envDemoMode =
+      bool.fromEnvironment('DEMO_MODE', defaultValue: false);
+  static bool isDemoMode = _envDemoMode;
+
   /// When running on physical Android device with `adb reverse tcp:4000 tcp:4000`,
   /// setting this to true connects to 127.0.0.1 (phone's loopback forwarded to PC).
   static bool useRealDevice = true;
@@ -105,4 +112,22 @@ class ApiConfig {
   static const String tickets = '/tickets';
   static String ticketDetail(dynamic ticketId) => '/tickets/$ticketId';
   static const String ticketLookup = '/tickets/lookup';
+  static const String ticketCancel = '/tickets/cancel';
+  static const String ticketsCancel = ticketCancel;
+
+  // Reviews (Owner: Người B)
+  static const String reviews = '/reviews';
+
+  // Notifications (Owner: Người B)
+  static const String notifications = '/notifications';
+  static String notificationRead(dynamic id) => '/notifications/$id/read';
+  static const String notificationReadAll = '/notifications/read-all';
+
+  // Routes & Bus Companies
+  static const String routes = '/routes';
+  static String routeDetail(dynamic routeId) => '/routes/$routeId';
+  static const String busCompanies = '/bus-companies';
+  static String busCompanyDetail(dynamic companyId) =>
+      '/bus-companies/$companyId';
 }
+

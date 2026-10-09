@@ -3,10 +3,19 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vexgo_app/app/app.dart';
+import 'package:vexgo_app/core/network/api_config.dart';
 
 void main() {
   setUpAll(() {
     HttpOverrides.global = _TestHttpOverrides();
+  });
+
+  setUp(() {
+    ApiConfig.isDemoMode = true;
+  });
+
+  tearDown(() {
+    ApiConfig.isDemoMode = false;
   });
 
   testWidgets('VexGo App smoke test', (WidgetTester tester) async {

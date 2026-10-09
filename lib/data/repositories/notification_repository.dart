@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
+import 'package:vexgo_app/core/network/api_client.dart';
 import 'package:vexgo_app/core/utils/json_loader.dart';
+import '../datasources/remote/notification_remote_data_source.dart';
 import '../models/notification_model.dart';
 
 abstract class NotificationRepository {
@@ -44,3 +47,93 @@ class MockNotificationRepository implements NotificationRepository {
     _cachedNotifications = list.map((n) => n.copyWith(isRead: true)).toList();
   }
 }
+
+class HybridNotificationRepository implements NotificationRepository {
+  final NotificationRemoteDataSource remoteDataSource;
+  final MockNotificationRepository mockFallback;
+
+  HybridNotificationRepository({
+    NotificationRemoteDataSource? remoteDataSource,
+    MockNotificationRepository? mockFallback,
+  }) : remoteDataSource =
+           remoteDataSource ??
+           NotificationRemoteDataSourceImpl(client: ApiClient()),
+       mockFallback = mockFallback ?? MockNotificationRepository();
+
+  @override
+  Future<List<NotificationModel>> getNotifications() async {
+    try {
+      final list = await remoteDataSource.getMyNotifications();
+      if (list.isNotEmpty) {
+        return list;
+      }
+      return await mockFallback.getNotifications();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HybridNotificationRepository] Remote getNotifications failed: $e, fallback to mock',
+        );
+      }
+      return await mockFallback.getNotifications();
+    }
+  }
+
+  @override
+  Future<void> markAsRead(String id) async {
+    try {
+      final parsedId = int.tryParse(id) ?? id;
+      await remoteDataSource.markAsRead(parsedId);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HybridNotificationRepository] Remote markAsRead failed: $e',
+        );
+      }
+    }
+    try {
+      await mockFallback.markAsRead(id);
+    } catch (_) {}
+  }
+
+  @override
+  Future<void> markAllAsRead() async {
+    try {
+      await remoteDataSource.markAllAsRead();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HybridNotificationRepository] Remote markAllAsRead failed: $e',
+        );
+      }
+    }
+    try {
+      await mockFallback.markAllAsRead();
+    } catch (_) {}
+  }
+}
+
+/// Real notification repository: 100% remote calls
+class RealNotificationRepository implements NotificationRepository {
+  final NotificationRemoteDataSource remoteDataSource;
+
+  RealNotificationRepository({NotificationRemoteDataSource? remoteDataSource})
+      : remoteDataSource = remoteDataSource ??
+            NotificationRemoteDataSourceImpl(client: ApiClient());
+
+  @override
+  Future<List<NotificationModel>> getNotifications() async {
+    return await remoteDataSource.getMyNotifications();
+  }
+
+  @override
+  Future<void> markAsRead(String id) async {
+    final parsedId = int.tryParse(id) ?? id;
+    await remoteDataSource.markAsRead(parsedId);
+  }
+
+  @override
+  Future<void> markAllAsRead() async {
+    await remoteDataSource.markAllAsRead();
+  }
+}
+

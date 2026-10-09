@@ -151,6 +151,94 @@ class ApiClient {
     }
   }
 
+  /// Execute PUT request
+  Future<dynamic> put(
+    String path, {
+    dynamic body,
+    Map<String, dynamic>? queryParams,
+    Map<String, String>? headers,
+    bool requiresAuth = false,
+  }) async {
+    final uri = _buildUri(path, queryParams);
+    final reqHeaders = await _buildHeaders(
+      extraHeaders: headers,
+      requiresAuth: requiresAuth,
+    );
+
+    try {
+      final encodedBody = body != null ? jsonEncode(body) : null;
+      if (kDebugMode) {
+        final payloadSize = encodedBody != null
+            ? ' (${encodedBody.length} bytes)'
+            : '';
+        debugPrint('[API PUT] $uri$payloadSize');
+      }
+      final response = await _httpClient
+          .put(uri, headers: reqHeaders, body: encodedBody)
+          .timeout(ApiConfig.receiveTimeout);
+      return _processResponse(response);
+    } on SocketException catch (e) {
+      throw NetworkException(
+        message: 'Không thể kết nối đến máy chủ ($uri)',
+        originalError: e,
+      );
+    } on TimeoutException catch (e) {
+      throw NetworkException(
+        message: 'Yêu cầu quá hạn. Vui lòng thử lại.',
+        originalError: e,
+      );
+    } on http.ClientException catch (e) {
+      throw NetworkException(
+        message: 'Lỗi kết nối client: ${e.message}',
+        originalError: e,
+      );
+    }
+  }
+
+  /// Execute PATCH request
+  Future<dynamic> patch(
+    String path, {
+    dynamic body,
+    Map<String, dynamic>? queryParams,
+    Map<String, String>? headers,
+    bool requiresAuth = false,
+  }) async {
+    final uri = _buildUri(path, queryParams);
+    final reqHeaders = await _buildHeaders(
+      extraHeaders: headers,
+      requiresAuth: requiresAuth,
+    );
+
+    try {
+      final encodedBody = body != null ? jsonEncode(body) : null;
+      if (kDebugMode) {
+        final payloadSize = encodedBody != null
+            ? ' (${encodedBody.length} bytes)'
+            : '';
+        debugPrint('[API PATCH] $uri$payloadSize');
+      }
+      final response = await _httpClient
+          .patch(uri, headers: reqHeaders, body: encodedBody)
+          .timeout(ApiConfig.receiveTimeout);
+      return _processResponse(response);
+    } on SocketException catch (e) {
+      throw NetworkException(
+        message: 'Không thể kết nối đến máy chủ ($uri)',
+        originalError: e,
+      );
+    } on TimeoutException catch (e) {
+      throw NetworkException(
+        message: 'Yêu cầu quá hạn. Vui lòng thử lại.',
+        originalError: e,
+      );
+    } on http.ClientException catch (e) {
+      throw NetworkException(
+        message: 'Lỗi kết nối client: ${e.message}',
+        originalError: e,
+      );
+    }
+  }
+
   /// Execute DELETE request
   Future<dynamic> delete(
     String path, {

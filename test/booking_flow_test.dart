@@ -350,4 +350,52 @@ void main() {
       ),
     );
   });
+
+  test(
+    'Finding 1 [BLOCKER]: Real trip with empty seats does NOT fallback to mock seat layout',
+    () async {
+      final emptyRepo = EmptySeatsSeatRepository();
+      final testBloc = BookingFlowBloc(
+        seatRepository: emptyRepo,
+        bookingRepository: bookingRepository,
+      );
+
+      testBloc.add(
+        InitBookingFlowEvent(
+          trip: testTrip, // id: '101' -> real trip
+          date: DateTime(2026, 9, 25),
+        ),
+      );
+
+      await testBloc.stream.firstWhere(
+        (s) => s.status == BookingFlowStatus.loaded,
+      );
+
+      expect(testBloc.state.seatLayout, isNotNull);
+      expect(testBloc.state.seatLayout!.lowerFloor, isEmpty);
+      expect(testBloc.state.seatLayout!.upperFloor, isEmpty);
+      expect(
+        emptyRepo.getSeatLayoutCalled,
+        isFalse,
+        reason: 'Mock getSeatLayout must NEVER be called when real trip has empty seats',
+      );
+
+      await testBloc.close();
+    },
+  );
+}
+
+class EmptySeatsSeatRepository extends FakeSeatRepository {
+  bool getSeatLayoutCalled = false;
+
+  @override
+  Future<List<SeatModel>> getTripSeats(dynamic tripId) async {
+    return const []; // Sold-out / empty inventory
+  }
+
+  @override
+  Future<SeatLayoutModel> getSeatLayout(String seatLayoutType) async {
+    getSeatLayoutCalled = true;
+    return super.getSeatLayout(seatLayoutType);
+  }
 }

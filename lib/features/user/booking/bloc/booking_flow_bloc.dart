@@ -53,20 +53,14 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
       SeatLayoutModel seatLayout;
       if (tripId != null && tripId > 0) {
         final realSeats = await seatRepository.getTripSeats(tripId);
-        if (realSeats.isNotEmpty) {
-          final lower = realSeats.where((s) => s.floor == 1).toList();
-          final upper = realSeats.where((s) => s.floor == 2).toList();
-          seatLayout = SeatLayoutModel(
-            vehicleType: event.trip.vehicleType,
-            hasTwoFloors: upper.isNotEmpty,
-            lowerFloor: lower,
-            upperFloor: upper,
-          );
-        } else {
-          seatLayout = await seatRepository.getSeatLayout(
-            event.trip.seatLayoutType,
-          );
-        }
+        final lower = realSeats.where((s) => s.floor == 1).toList();
+        final upper = realSeats.where((s) => s.floor == 2).toList();
+        seatLayout = SeatLayoutModel(
+          vehicleType: event.trip.vehicleType,
+          hasTwoFloors: upper.isNotEmpty,
+          lowerFloor: lower,
+          upperFloor: upper,
+        );
       } else {
         seatLayout = await seatRepository.getSeatLayout(
           event.trip.seatLayoutType,

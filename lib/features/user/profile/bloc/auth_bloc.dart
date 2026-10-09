@@ -16,6 +16,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ToggleLanguageEvent>(_onToggleLanguage);
     on<TogglePushNotificationEvent>(_onTogglePushNotification);
     on<LogoutEvent>(_onLogout);
+    on<ClearPendingRegistrationEvent>(_onClearPendingRegistration);
   }
 
   Future<void> _onCheckAuthStatus(
@@ -30,6 +31,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           state.copyWith(
             status: AuthStatus.authenticated,
             user: user,
+            clearPendingRegistration: true,
             clearMessages: true,
           ),
         );
@@ -37,6 +39,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(
           state.copyWith(
             status: AuthStatus.unauthenticated,
+            clearUser: true,
+            clearPendingRegistration: true,
             clearMessages: true,
           ),
         );
@@ -45,6 +49,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
+          clearUser: true,
+          clearPendingRegistration: true,
           errorMessage: e.toString(),
         ),
       );
@@ -65,6 +71,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
+          clearPendingRegistration: true,
           successMessage: 'Đăng nhập thành công! Chào mừng ${user.hoTen}',
         ),
       );
@@ -84,13 +91,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(state.copyWith(status: AuthStatus.loading, clearMessages: true));
     try {
-      await authRepository.sendOtp(phone: event.phone);
+      final challengeId = await authRepository.sendOtp(phone: event.phone);
       emit(
         state.copyWith(
           status: AuthStatus.otpRequired,
           pendingPhone: event.phone,
           pendingFullName: event.fullName,
           pendingPassword: event.password,
+          pendingChallengeId: challengeId.isNotEmpty ? challengeId : null,
           successMessage: 'Mã xác thực OTP đã được gửi đến số ${event.phone}',
         ),
       );
@@ -115,11 +123,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         otp: event.otp,
         fullName: event.fullName,
         password: event.password,
+        challengeId: event.challengeId ?? state.pendingChallengeId,
       );
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
+          clearPendingRegistration: true,
           successMessage:
               'Đăng ký thành công! Bạn nhận được 100 điểm VexGo thưởng.',
         ),
@@ -216,9 +226,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(
       state.copyWith(
         status: AuthStatus.unauthenticated,
-        user: null,
+        clearUser: true,
+        clearPendingRegistration: true,
         successMessage: 'Đã đăng xuất tài khoản an toàn.',
       ),
     );
+  }
+
+  void _onClearPendingRegistration(
+    ClearPendingRegistrationEvent event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(state.copyWith(clearPendingRegistration: true));
   }
 }

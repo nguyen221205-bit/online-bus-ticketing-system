@@ -5,12 +5,13 @@ import '../../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({required String phone, required String password});
-  Future<void> sendOtp({required String phone});
+  Future<String> sendOtp({required String phone});
   Future<UserModel> verifyOtpAndRegister({
     required String phone,
     required String otp,
     required String fullName,
     required String password,
+    String? challengeId,
   });
   Future<UserModel?> getCurrentUser();
   Future<void> logout();
@@ -60,15 +61,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> sendOtp({required String phone}) async {
+  Future<String> sendOtp({required String phone}) async {
     final formattedPhone = phone.startsWith('0')
         ? '+84${phone.substring(1)}'
         : phone;
-    await client.post(
+    final res = await client.post(
       ApiConfig.authRequestOtp,
       body: {'phoneNumber': formattedPhone},
       requiresAuth: false,
     );
+    if (res is Map<String, dynamic>) {
+      final challengeId = res['challengeId'] as String? ??
+          (res['data'] is Map<String, dynamic>
+              ? res['data']['challengeId'] as String?
+              : null);
+      if (challengeId != null && challengeId.isNotEmpty) {
+        return challengeId;
+      }
+    }
+    return '';
   }
 
   @override
@@ -77,13 +88,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String otp,
     required String fullName,
     required String password,
+    String? challengeId,
   }) async {
     final formattedPhone = phone.startsWith('0')
         ? '+84${phone.substring(1)}'
         : phone;
+    final verifyBody = <String, dynamic>{
+      'phoneNumber': formattedPhone,
+      'otp': otp,
+    };
+    if (challengeId != null && challengeId.isNotEmpty) {
+      verifyBody['challengeId'] = challengeId;
+    }
     final verifyRes = await client.post(
       ApiConfig.authVerifyOtp,
-      body: {'phoneNumber': formattedPhone, 'otp': otp},
+      body: verifyBody,
       requiresAuth: false,
     );
 
@@ -152,8 +171,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> logout() async {
     try {
-      await client.post(ApiConfig.authLogout, requiresAuth: true);
-    } catch (_) {}
-    await TokenStorage.clearTokens();
+      final refreshToken = await TokenStorage.getRefreshToken();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await client.post(
+          ApiConfig.authLogout,
+          body: {'refreshToken': refreshToken},
+          requiresAuth: false,
+        );
+      }
+    } catch (_) {
+      // Ignore network / token errors to guarantee local state clearance
+    } finally {
+      await TokenStorage.clearTokens();
+    }
   }
 }

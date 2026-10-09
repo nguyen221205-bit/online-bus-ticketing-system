@@ -38,7 +38,7 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> sendOtp({required String phone}) async {}
+  Future<String> sendOtp({required String phone}) async => 'test-challenge-uuid';
 
   @override
   Future<UserModel> verifyOtpAndRegister({
@@ -46,6 +46,7 @@ class FakeAuthRepository implements AuthRepository {
     required String otp,
     required String fullName,
     required String password,
+    String? challengeId,
   }) async {
     if (otp != '123456') {
       throw Exception('Mã OTP không chính xác hoặc đã hết hạn');
@@ -201,6 +202,7 @@ void main() {
             (s) =>
                 s.status == AuthStatus.otpRequired &&
                 s.pendingPhone == '0912345678' &&
+                s.pendingChallengeId == 'test-challenge-uuid' &&
                 s.successMessage?.contains('0912345678') == true,
           ),
         ]),
@@ -353,6 +355,142 @@ void main() {
         ]),
       );
     });
+
+    test(
+      'Finding 2 [HIGH / SECURITY]: AuthState.copyWith clears user and pending registration fields with flags',
+      () {
+        const loggedUser = UserModel(
+          taiKhoanId: 99,
+          maKhachHang: 'KH00099',
+          hoTen: 'User Test',
+          soDienThoai: '0911222333',
+        );
+        const stateWithUser = AuthState(
+          status: AuthStatus.authenticated,
+          user: loggedUser,
+          pendingPhone: '0911222333',
+          pendingFullName: 'User Test',
+          pendingPassword: 'PlaintextPassword123!',
+          pendingChallengeId: 'test-challenge-uuid',
+        );
+
+        // 1. clearUser: true sets user to null
+        final stateAfterLogout = stateWithUser.copyWith(
+          status: AuthStatus.unauthenticated,
+          clearUser: true,
+        );
+        expect(stateAfterLogout.user, isNull);
+        expect(stateAfterLogout.isAuthenticated, isFalse);
+
+        // 2. clearPendingRegistration: true wipes all sensitive registration fields
+        final stateAfterPurge = stateWithUser.copyWith(
+          clearPendingRegistration: true,
+        );
+        expect(stateAfterPurge.pendingPassword, isNull);
+        expect(stateAfterPurge.pendingPhone, isNull);
+        expect(stateAfterPurge.pendingFullName, isNull);
+        expect(stateAfterPurge.pendingChallengeId, isNull);
+      },
+    );
+
+    test(
+      'Finding 2 [HIGH / SECURITY]: VerifyOtpAndRegisterEvent wipes plaintext pendingPassword from state on success',
+      () async {
+        // Step 1: Request OTP sets pendingPassword
+        authBloc.add(
+          const RequestRegisterOtpEvent(
+            phone: '0912345678',
+            fullName: 'Trần Văn Mới',
+            password: 'MySecretPassword123!',
+          ),
+        );
+        await authBloc.stream.firstWhere(
+          (s) => s.status == AuthStatus.otpRequired,
+        );
+        expect(
+          authBloc.state.pendingPassword,
+          equals('MySecretPassword123!'),
+        );
+
+        // Step 2: Verify OTP completes registration and PURGES pendingPassword
+        authBloc.add(
+          const VerifyOtpAndRegisterEvent(
+            phone: '0912345678',
+            otp: '123456',
+            fullName: 'Trần Văn Mới',
+            password: 'MySecretPassword123!',
+          ),
+        );
+        await authBloc.stream.firstWhere(
+          (s) => s.status == AuthStatus.authenticated,
+        );
+
+        expect(authBloc.state.status, equals(AuthStatus.authenticated));
+        expect(authBloc.state.user, isNotNull);
+        expect(
+          authBloc.state.pendingPassword,
+          isNull,
+          reason: 'Plaintext password must be purged immediately from state',
+        );
+        expect(authBloc.state.pendingPhone, isNull);
+        expect(authBloc.state.pendingFullName, isNull);
+      },
+    );
+
+    test(
+      'Finding 2 [HIGH / SECURITY]: ClearPendingRegistrationEvent wipes pending password when user cancels registration',
+      () async {
+        authBloc.add(
+          const RequestRegisterOtpEvent(
+            phone: '0912345678',
+            fullName: 'Trần Văn Mới',
+            password: 'SecretToCancel123!',
+          ),
+        );
+        await authBloc.stream.firstWhere(
+          (s) => s.status == AuthStatus.otpRequired,
+        );
+        expect(
+          authBloc.state.pendingPassword,
+          equals('SecretToCancel123!'),
+        );
+
+        // Cancel / back navigation wipes sensitive data
+        authBloc.add(const ClearPendingRegistrationEvent());
+        await authBloc.stream.firstWhere(
+          (s) => s.pendingPassword == null,
+        );
+
+        expect(authBloc.state.pendingPassword, isNull);
+        expect(authBloc.state.pendingPhone, isNull);
+      },
+    );
+
+    test(
+      'Finding 2 [HIGH / SECURITY]: LogoutEvent clears existing logged-in user from state to null',
+      () async {
+        // First log in
+        authBloc.add(
+          const LoginWithPhoneEvent(
+            phone: '0988776655',
+            password: 'password123',
+          ),
+        );
+        await authBloc.stream.firstWhere(
+          (s) => s.status == AuthStatus.authenticated,
+        );
+        expect(authBloc.state.user, isNotNull);
+
+        // Then logout
+        authBloc.add(const LogoutEvent());
+        await authBloc.stream.firstWhere(
+          (s) => s.status == AuthStatus.unauthenticated,
+        );
+
+        expect(authBloc.state.user, isNull);
+        expect(authBloc.state.isAuthenticated, isFalse);
+      },
+    );
   });
 
   group('NotificationBloc Tests', () {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../core/network/api_config.dart';
 import '../core/theme/app_theme.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/booking_repository.dart';
@@ -19,29 +20,37 @@ class VexGoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDemo = ApiConfig.isDemoMode;
+
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<TripRepository>(
-          create: (context) => HybridTripRepository(),
+          create: (context) =>
+              isDemo ? MockTripRepository() : RealTripRepository(),
         ),
         RepositoryProvider<SeatRepository>(
-          create: (context) => HybridSeatRepository(),
+          create: (context) =>
+              isDemo ? MockSeatRepository() : RealSeatRepository(),
         ),
         RepositoryProvider<BookingRepository>(
-          create: (context) => HybridBookingRepository(),
+          create: (context) =>
+              isDemo ? MockBookingRepository() : RealBookingRepository(),
         ),
         RepositoryProvider<AuthRepository>(
-          create: (context) => HybridAuthRepository(),
+          create: (context) =>
+              isDemo ? MockAuthRepository() : RealAuthRepository(),
         ),
         RepositoryProvider<NotificationRepository>(
-          create: (context) => MockNotificationRepository(),
+          create: (context) =>
+              isDemo ? MockNotificationRepository() : RealNotificationRepository(),
         ),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider<MyTicketsBloc>(
-            create: (context) =>
-                MyTicketsBloc()..add(const LoadMyTicketsEvent()),
+            create: (context) => MyTicketsBloc(
+              bookingRepository: context.read<BookingRepository>(),
+            )..add(const LoadMyTicketsEvent()),
           ),
           BlocProvider<AuthBloc>(
             create: (context) =>

@@ -42,16 +42,18 @@ class VerifyOtpAndRegisterEvent extends AuthEvent {
   final String otp;
   final String fullName;
   final String password;
+  final String? challengeId;
 
   const VerifyOtpAndRegisterEvent({
     required this.phone,
     required this.otp,
     required this.fullName,
     required this.password,
+    this.challengeId,
   });
 
   @override
-  List<Object?> get props => [phone, otp, fullName, password];
+  List<Object?> get props => [phone, otp, fullName, password, challengeId];
 }
 
 class UpdateProfileEvent extends AuthEvent {
@@ -93,4 +95,8 @@ class TogglePushNotificationEvent extends AuthEvent {
 
 class LogoutEvent extends AuthEvent {
   const LogoutEvent();
+}
+
+class ClearPendingRegistrationEvent extends AuthEvent {
+  const ClearPendingRegistrationEvent();
 }

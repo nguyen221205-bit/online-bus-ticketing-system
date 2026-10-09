@@ -13,6 +13,8 @@ class TripModel extends Equatable {
   final String toCityName;
   final String departureTime;
   final String arrivalTime;
+  final String? rawDepartureTime;
+  final String? rawArrivalTime;
   final String duration;
   final String pickupPoint;
   final String pickupAddress;
@@ -42,6 +44,8 @@ class TripModel extends Equatable {
     required this.toCityName,
     required this.departureTime,
     required this.arrivalTime,
+    this.rawDepartureTime,
+    this.rawArrivalTime,
     required this.duration,
     required this.pickupPoint,
     required this.pickupAddress,
@@ -60,13 +64,47 @@ class TripModel extends Equatable {
     this.dropoffPoints = const [],
   });
 
+  /// Normalizes departure/arrival time from ISO-8601 (e.g. 2026-10-10T07:00:00.000Z) or HH:mm:ss to HH:mm
+  static String normalizeTime(String rawTime) {
+    if (rawTime.isEmpty) return rawTime;
+    if (rawTime.contains('T')) {
+      final parsed = DateTime.tryParse(rawTime);
+      if (parsed != null) {
+        // Backend stores business time zone (Vietnam ICT: UTC+7).
+        final vnTime = parsed.isUtc
+            ? parsed.add(const Duration(hours: 7))
+            : parsed;
+        return '${vnTime.hour.toString().padLeft(2, '0')}:${vnTime.minute.toString().padLeft(2, '0')}';
+      }
+    }
+    if (rawTime.contains(':')) {
+      final parts = rawTime.split(':');
+      if (parts.length >= 2) {
+        final hh = parts[0].trim().padLeft(2, '0');
+        final mm = parts[1].trim().padLeft(2, '0');
+        if (int.tryParse(hh) != null && int.tryParse(mm) != null) {
+          return '$hh:$mm';
+        }
+      }
+    }
+    return rawTime;
+  }
+
   factory TripModel.fromJson(Map<String, dynamic> json) {
     final defaultPickup = json['pickupPoint'] as String? ?? '';
     final defaultPickupAddress = json['pickupAddress'] as String? ?? '';
     final defaultDropoff = json['dropoffPoint'] as String? ?? '';
     final defaultDropoffAddress = json['dropoffAddress'] as String? ?? '';
-    final departureTime = json['departureTime'] as String? ?? '';
-    final arrivalTime = json['arrivalTime'] as String? ?? '';
+    final rawDepartureTime =
+        json['rawDepartureTime'] as String? ??
+        json['departureTime'] as String? ??
+        '';
+    final rawArrivalTime =
+        json['rawArrivalTime'] as String? ??
+        json['arrivalTime'] as String? ??
+        '';
+    final departureTime = normalizeTime(rawDepartureTime);
+    final arrivalTime = normalizeTime(rawArrivalTime);
 
     List<StopPointModel> parsedPickupPoints = [];
     if (json['pickupPoints'] != null) {
@@ -193,6 +231,8 @@ class TripModel extends Equatable {
       toCityName: toCityName,
       departureTime: departureTime,
       arrivalTime: arrivalTime,
+      rawDepartureTime: rawDepartureTime.isNotEmpty ? rawDepartureTime : null,
+      rawArrivalTime: rawArrivalTime.isNotEmpty ? rawArrivalTime : null,
       duration: duration,
       pickupPoint: defaultPickup,
       pickupAddress: defaultPickupAddress,
@@ -232,6 +272,8 @@ class TripModel extends Equatable {
     'toCityName': toCityName,
     'departureTime': departureTime,
     'arrivalTime': arrivalTime,
+    if (rawDepartureTime != null) 'rawDepartureTime': rawDepartureTime,
+    if (rawArrivalTime != null) 'rawArrivalTime': rawArrivalTime,
     'duration': duration,
     'pickupPoint': pickupPoint,
     'pickupAddress': pickupAddress,

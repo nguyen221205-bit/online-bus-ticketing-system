@@ -49,8 +49,10 @@ class _CancelTicketSheetState extends State<CancelTicketSheet> {
   @override
   Widget build(BuildContext context) {
     final canCancel = widget.ticket.canCancel;
-    final refundAmount = (widget.ticket.finalAmount * 0.9).round();
-    final cancellationFee = widget.ticket.finalAmount - refundAmount;
+    final cancelFeeRate = widget.ticket.cancelFeeRate;
+    final cancellationFee = (widget.ticket.finalAmount * cancelFeeRate).round();
+    final refundAmount = widget.ticket.calculatedRefundAmount;
+    final feePercent = (cancelFeeRate * 100).toInt();
 
     return Container(
       decoration: const BoxDecoration(
@@ -168,7 +170,7 @@ class _CancelTicketSheetState extends State<CancelTicketSheet> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Theo chính sách của nhà xe ${widget.ticket.trip.operatorName}, vé chỉ có thể hủy trực tuyến trước giờ khởi hành ít nhất 3 giờ.',
+                        'Theo chính sách của nhà xe ${widget.ticket.trip.operatorName}, vé chỉ có thể hủy trực tuyến trước giờ khởi hành ít nhất 12 giờ.',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.neutral700,
                           height: 1.4,
@@ -176,7 +178,7 @@ class _CancelTicketSheetState extends State<CancelTicketSheet> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Chuyến xe của bạn khởi hành lúc ${widget.ticket.trip.departureTime} ngày ${widget.ticket.trip.departureDate} (trong vòng dưới 3 giờ). Vui lòng liên hệ trực tiếp hotline để được hỗ trợ đặc biệt.',
+                        'Chuyến xe của bạn khởi hành lúc ${widget.ticket.trip.departureTime} ngày ${widget.ticket.trip.departureDate} (trong vòng dưới 12 giờ). Vui lòng liên hệ trực tiếp hotline để được hỗ trợ đặc biệt.',
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.error,
                           fontWeight: FontWeight.w600,
@@ -264,7 +266,7 @@ class _CancelTicketSheetState extends State<CancelTicketSheet> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Phí hủy theo quy định (10%):',
+                            'Phí hủy theo quy định ($feePercent%):',
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.error,
                             ),

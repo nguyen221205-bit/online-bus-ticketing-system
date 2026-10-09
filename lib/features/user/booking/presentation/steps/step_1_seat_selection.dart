@@ -110,6 +110,39 @@ class Step1SeatSelection extends StatelessWidget {
 
           const SizedBox(height: AppDimensions.base),
 
+          // Sold-out / Empty Seats Alert
+          if (layout.lowerFloor.isEmpty && layout.upperFloor.isEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.base,
+                vertical: AppDimensions.sm,
+              ),
+              padding: const EdgeInsets.all(AppDimensions.md),
+              decoration: BoxDecoration(
+                color: AppColors.warningLight,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                border: Border.all(color: AppColors.warning),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.warningDark,
+                  ),
+                  const SizedBox(width: AppDimensions.sm),
+                  Expanded(
+                    child: Text(
+                      'Chuyến xe này hiện đã hết vé hoặc chưa mở bán ghế trên hệ thống.',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.neutral800,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Seat Map
           SeatMapView(
             layout: layout,

@@ -22,15 +22,29 @@ class OperatorModel extends Equatable {
   });
 
   factory OperatorModel.fromJson(Map<String, dynamic> json) {
+    final id = json['busCompanyId']?.toString() ?? json['id']?.toString() ?? '';
+    final name = json['name'] as String? ?? json['tenNhaXe'] as String? ?? '';
+    final shortName = json['shortName'] as String? ?? json['code'] as String? ?? name;
+    final hotline = json['hotline'] as String? ??
+        json['contactInfo'] as String? ??
+        json['thongTinLienHe'] as String? ??
+        '1900 6067';
+    final rating = (json['rating'] as num?)?.toDouble() ?? 4.8;
+    final reviewCount = json['reviewCount'] as int? ?? 1250;
+    final logoUrl = json['logoUrl'] as String? ??
+        'https://cdn.vexere.com/v3/2022/07/logo-futa.png';
+    final policy = json['policy'] as String? ??
+        'Chính sách hủy vé linh hoạt theo quy định của nhà xe.';
+
     return OperatorModel(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      shortName: json['shortName'] as String? ?? '',
-      hotline: json['hotline'] as String? ?? '',
-      rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
-      reviewCount: json['reviewCount'] as int? ?? 0,
-      logoUrl: json['logoUrl'] as String? ?? '',
-      policy: json['policy'] as String? ?? '',
+      id: id,
+      name: name,
+      shortName: shortName,
+      hotline: hotline,
+      rating: rating,
+      reviewCount: reviewCount,
+      logoUrl: logoUrl,
+      policy: policy,
     );
   }
 

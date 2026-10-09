@@ -18,6 +18,7 @@ class AuthState extends Equatable {
   final String? pendingPhone;
   final String? pendingFullName;
   final String? pendingPassword;
+  final String? pendingChallengeId;
   final String language; // 'vi' or 'en'
   final bool pushEnabled;
 
@@ -29,6 +30,7 @@ class AuthState extends Equatable {
     this.pendingPhone,
     this.pendingFullName,
     this.pendingPassword,
+    this.pendingChallengeId,
     this.language = 'vi',
     this.pushEnabled = true,
   });
@@ -39,25 +41,37 @@ class AuthState extends Equatable {
   AuthState copyWith({
     AuthStatus? status,
     UserModel? user,
+    bool clearUser = false,
     String? errorMessage,
     String? successMessage,
     String? pendingPhone,
     String? pendingFullName,
     String? pendingPassword,
+    String? pendingChallengeId,
+    bool clearPendingRegistration = false,
     String? language,
     bool? pushEnabled,
     bool clearMessages = false,
   }) {
     return AuthState(
       status: status ?? this.status,
-      user: user ?? this.user,
+      user: clearUser ? null : (user ?? this.user),
       errorMessage: clearMessages ? null : (errorMessage ?? this.errorMessage),
       successMessage: clearMessages
           ? null
           : (successMessage ?? this.successMessage),
-      pendingPhone: pendingPhone ?? this.pendingPhone,
-      pendingFullName: pendingFullName ?? this.pendingFullName,
-      pendingPassword: pendingPassword ?? this.pendingPassword,
+      pendingPhone: clearPendingRegistration
+          ? null
+          : (pendingPhone ?? this.pendingPhone),
+      pendingFullName: clearPendingRegistration
+          ? null
+          : (pendingFullName ?? this.pendingFullName),
+      pendingPassword: clearPendingRegistration
+          ? null
+          : (pendingPassword ?? this.pendingPassword),
+      pendingChallengeId: clearPendingRegistration
+          ? null
+          : (pendingChallengeId ?? this.pendingChallengeId),
       language: language ?? this.language,
       pushEnabled: pushEnabled ?? this.pushEnabled,
     );
@@ -72,6 +86,7 @@ class AuthState extends Equatable {
     pendingPhone,
     pendingFullName,
     pendingPassword,
+    pendingChallengeId,
     language,
     pushEnabled,
   ];

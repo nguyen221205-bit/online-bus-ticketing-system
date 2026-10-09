@@ -35,9 +35,13 @@ class SearchTripsBloc extends Bloc<SearchTripsEvent, SearchTripsState> {
     );
 
     try {
+      final d = event.date;
+      final dateStr =
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
       final trips = await tripRepository.searchTrips(
         fromCityId: event.fromCityId,
         toCityId: event.toCityId,
+        date: dateStr,
       );
 
       // Extract unique operators, vehicle types, amenities
@@ -78,9 +82,17 @@ class SearchTripsBloc extends Bloc<SearchTripsEvent, SearchTripsState> {
     emit(
       state.copyWith(
         selectedDate: event.newDate,
-        // In a real app or with mock, we can slight vary price or show the trips
       ),
     );
+    if (state.fromCityId.isNotEmpty && state.toCityId.isNotEmpty) {
+      add(
+        LoadTripsEvent(
+          fromCityId: state.fromCityId,
+          toCityId: state.toCityId,
+          date: event.newDate,
+        ),
+      );
+    }
   }
 
   void _onApplyFilter(ApplyFilterEvent event, Emitter<SearchTripsState> emit) {
