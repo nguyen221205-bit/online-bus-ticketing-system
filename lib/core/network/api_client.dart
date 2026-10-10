@@ -35,6 +35,53 @@ class ApiClient {
     return uri;
   }
 
+  /// Sanitize URI to prevent leaking tokens, secrets, or keys in debug logs and error messages
+  static String sanitizeUriForLog(Uri uri) {
+    bool hasSensitiveSegment = false;
+    for (final s in uri.pathSegments) {
+      if (s.length > 20 ||
+          s.contains('.') ||
+          s.toLowerCase().contains('token')) {
+        hasSensitiveSegment = true;
+        break;
+      }
+    }
+
+    if (!uri.hasQuery && !hasSensitiveSegment) {
+      return uri.toString();
+    }
+
+    final cleanParams = Map<String, String>.from(uri.queryParameters);
+    for (final key in cleanParams.keys.toList()) {
+      final lower = key.toLowerCase();
+      if (lower.contains('token') ||
+          lower.contains('secret') ||
+          lower.contains('key') ||
+          lower.contains('auth') ||
+          lower.contains('password') ||
+          lower.contains('code') ||
+          lower.contains('otp')) {
+        cleanParams[key] = '***REDACTED***';
+      }
+    }
+
+    final cleanSegments = uri.pathSegments.map((s) {
+      if (s.length > 20 ||
+          s.contains('.') ||
+          s.toLowerCase().contains('token')) {
+        return '***REDACTED***';
+      }
+      return s;
+    }).toList();
+
+    return uri
+        .replace(
+          pathSegments: cleanSegments,
+          queryParameters: cleanParams.isEmpty ? null : cleanParams,
+        )
+        .toString();
+  }
+
   /// Construct default headers with Bearer token if required or optional
   Future<Map<String, String>> _buildHeaders({
     Map<String, String>? extraHeaders,
@@ -83,7 +130,7 @@ class ApiClient {
 
     try {
       if (kDebugMode) {
-        debugPrint('[API GET] $uri');
+        debugPrint('[API GET] ${sanitizeUriForLog(uri)}');
       }
       final response = await _httpClient
           .get(uri, headers: reqHeaders)
@@ -91,7 +138,7 @@ class ApiClient {
       return _processResponse(response);
     } on SocketException catch (e) {
       throw NetworkException(
-        message: 'Không thể kết nối đến máy chủ ($uri)',
+        message: 'Không thể kết nối đến máy chủ (${sanitizeUriForLog(uri)})',
         originalError: e,
       );
     } on TimeoutException catch (e) {
@@ -127,7 +174,7 @@ class ApiClient {
         final payloadSize = encodedBody != null
             ? ' (${encodedBody.length} bytes)'
             : '';
-        debugPrint('[API POST] $uri$payloadSize');
+        debugPrint('[API POST] ${sanitizeUriForLog(uri)}$payloadSize');
       }
       final response = await _httpClient
           .post(uri, headers: reqHeaders, body: encodedBody)
@@ -135,7 +182,7 @@ class ApiClient {
       return _processResponse(response);
     } on SocketException catch (e) {
       throw NetworkException(
-        message: 'Không thể kết nối đến máy chủ ($uri)',
+        message: 'Không thể kết nối đến máy chủ (${sanitizeUriForLog(uri)})',
         originalError: e,
       );
     } on TimeoutException catch (e) {
@@ -171,7 +218,7 @@ class ApiClient {
         final payloadSize = encodedBody != null
             ? ' (${encodedBody.length} bytes)'
             : '';
-        debugPrint('[API PUT] $uri$payloadSize');
+        debugPrint('[API PUT] ${sanitizeUriForLog(uri)}$payloadSize');
       }
       final response = await _httpClient
           .put(uri, headers: reqHeaders, body: encodedBody)
@@ -179,7 +226,7 @@ class ApiClient {
       return _processResponse(response);
     } on SocketException catch (e) {
       throw NetworkException(
-        message: 'Không thể kết nối đến máy chủ ($uri)',
+        message: 'Không thể kết nối đến máy chủ (${sanitizeUriForLog(uri)})',
         originalError: e,
       );
     } on TimeoutException catch (e) {
@@ -215,7 +262,7 @@ class ApiClient {
         final payloadSize = encodedBody != null
             ? ' (${encodedBody.length} bytes)'
             : '';
-        debugPrint('[API PATCH] $uri$payloadSize');
+        debugPrint('[API PATCH] ${sanitizeUriForLog(uri)}$payloadSize');
       }
       final response = await _httpClient
           .patch(uri, headers: reqHeaders, body: encodedBody)
@@ -223,7 +270,7 @@ class ApiClient {
       return _processResponse(response);
     } on SocketException catch (e) {
       throw NetworkException(
-        message: 'Không thể kết nối đến máy chủ ($uri)',
+        message: 'Không thể kết nối đến máy chủ (${sanitizeUriForLog(uri)})',
         originalError: e,
       );
     } on TimeoutException catch (e) {
@@ -256,7 +303,7 @@ class ApiClient {
     try {
       final encodedBody = body != null ? jsonEncode(body) : null;
       if (kDebugMode) {
-        debugPrint('[API DELETE] $uri');
+        debugPrint('[API DELETE] ${sanitizeUriForLog(uri)}');
       }
       final response = await _httpClient
           .delete(uri, headers: reqHeaders, body: encodedBody)
@@ -264,7 +311,7 @@ class ApiClient {
       return _processResponse(response);
     } on SocketException catch (e) {
       throw NetworkException(
-        message: 'Không thể kết nối đến máy chủ ($uri)',
+        message: 'Không thể kết nối đến máy chủ (${sanitizeUriForLog(uri)})',
         originalError: e,
       );
     } on TimeoutException catch (e) {

@@ -26,10 +26,10 @@ class UserModel extends Equatable {
     this.email,
     this.cccd,
     this.ngaySinh,
-    this.daXacThucSoDienThoai = true,
+    this.daXacThucSoDienThoai = false,
     this.trangThai = 'HOAT_DONG',
     this.diemTichLuy = 0,
-    this.hangThanhVien = 'BẠC',
+    this.hangThanhVien = '',
     this.diemToiHangTiepTheo = 1000,
     this.pointHistory = const [],
   });
@@ -41,6 +41,7 @@ class UserModel extends Equatable {
   }
 
   String get tierName {
+    if (hangThanhVien.isNotEmpty) return hangThanhVien;
     switch (tier) {
       case MembershipTier.diamond:
         return 'KIM CƯƠNG';
@@ -68,9 +69,7 @@ class UserModel extends Equatable {
             ?.toInt() ??
         0;
     final customerCode =
-        json['maKhachHang'] as String? ??
-        json['customerCode'] as String? ??
-        (json['customerId'] != null ? 'KH${json['customerId']}' : '');
+        json['maKhachHang'] as String? ?? json['customerCode'] as String? ?? '';
     final fullName =
         json['hoTen'] as String? ?? json['fullName'] as String? ?? '';
     final phone =
@@ -99,10 +98,10 @@ class UserModel extends Equatable {
       daXacThucSoDienThoai:
           json['daXacThucSoDienThoai'] as bool? ??
           json['phoneVerified'] as bool? ??
-          true,
+          false,
       trangThai: status,
       diemTichLuy: points,
-      hangThanhVien: json['hangThanhVien'] as String? ?? 'BẠC',
+      hangThanhVien: json['hangThanhVien'] as String? ?? '',
       diemToiHangTiepTheo: json['diemToiHangTiepTheo'] as int? ?? 1000,
       pointHistory: historyJson
           .map(

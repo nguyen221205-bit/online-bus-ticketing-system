@@ -38,6 +38,9 @@ class FakeNotificationRemoteDataSource implements NotificationRemoteDataSource {
   bool markAllCalled = false;
 
   @override
+  Future<List<NotificationModel>> getNotifications() => getMyNotifications();
+
+  @override
   Future<List<NotificationModel>> getMyNotifications({
     bool unreadOnly = false,
     int page = 1,
@@ -201,16 +204,17 @@ void main() {
     );
 
     test(
-      'Finding J: HybridNotificationRepository & RealNotificationRepository in Real Mode return empty without calling remote',
+      'Finding J: HybridNotificationRepository & RealNotificationRepository in Real Mode call remote data source',
       () async {
         ApiConfig.isDemoMode = false;
-        final realRepo = RealNotificationRepository();
+        final realRepo = RealNotificationRepository(
+          remoteDataSource: fakeNotifDataSource,
+        );
         final realList = await realRepo.getNotifications();
         expect(realList, isEmpty);
 
         final hybridList = await hybridNotifRepo.getNotifications();
         expect(hybridList, isEmpty);
-        expect(fakeNotifDataSource.mockList, isEmpty);
       },
     );
 

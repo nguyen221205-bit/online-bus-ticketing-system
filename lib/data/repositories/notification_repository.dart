@@ -65,40 +65,49 @@ class HybridNotificationRepository implements NotificationRepository {
     if (ApiConfig.isDemoMode) {
       return await mockFallback.getNotifications();
     }
-    // Backend version at HEAD f2edf7f does not provide notification endpoints yet.
-    return const [];
+    return await remoteDataSource.getNotifications();
   }
 
   @override
   Future<void> markAsRead(String id) async {
     if (ApiConfig.isDemoMode) {
       await mockFallback.markAsRead(id);
+      return;
     }
+    await remoteDataSource.markAsRead(id);
   }
 
   @override
   Future<void> markAllAsRead() async {
     if (ApiConfig.isDemoMode) {
       await mockFallback.markAllAsRead();
+      return;
     }
+    await remoteDataSource.markAllAsRead();
   }
 }
 
-/// Real notification repository: 100% real mode.
-/// Since backend at HEAD f2edf7f does not have /notifications, returns empty list without 404 calls.
+/// Real notification repository: 100% real mode using NotificationRemoteDataSource.
 class RealNotificationRepository implements NotificationRepository {
-  final NotificationRemoteDataSource? remoteDataSource;
+  final NotificationRemoteDataSource remoteDataSource;
 
-  RealNotificationRepository({this.remoteDataSource});
+  RealNotificationRepository({NotificationRemoteDataSource? remoteDataSource})
+    : remoteDataSource =
+          remoteDataSource ??
+          NotificationRemoteDataSourceImpl(client: ApiClient());
 
   @override
   Future<List<NotificationModel>> getNotifications() async {
-    return const [];
+    return await remoteDataSource.getNotifications();
   }
 
   @override
-  Future<void> markAsRead(String id) async {}
+  Future<void> markAsRead(String id) async {
+    await remoteDataSource.markAsRead(id);
+  }
 
   @override
-  Future<void> markAllAsRead() async {}
+  Future<void> markAllAsRead() async {
+    await remoteDataSource.markAllAsRead();
+  }
 }

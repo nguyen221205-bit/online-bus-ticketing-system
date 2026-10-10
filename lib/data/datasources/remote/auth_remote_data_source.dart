@@ -159,7 +159,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (!hasToken) return null;
 
     try {
-      final res = await client.get(ApiConfig.authSession, requiresAuth: true);
+      final res = await client.get(ApiConfig.me, requiresAuth: true);
       if (res is Map<String, dynamic>) {
         final data = res['data'] is Map<String, dynamic>
             ? res['data'] as Map<String, dynamic>

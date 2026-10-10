@@ -5,10 +5,13 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vexgo_app/core/network/api_client.dart';
 import 'package:vexgo_app/core/network/api_config.dart';
+import 'package:vexgo_app/core/network/api_exceptions.dart';
 import 'package:vexgo_app/core/network/token_storage.dart';
 import 'package:vexgo_app/data/adapters/city_search_adapter.dart';
 import 'package:vexgo_app/data/datasources/remote/auth_remote_data_source.dart';
+import 'package:vexgo_app/data/datasources/remote/notification_remote_data_source.dart';
 import 'package:vexgo_app/data/datasources/remote/review_remote_data_source.dart';
+import 'package:vexgo_app/data/datasources/remote/seat_remote_data_source.dart';
 import 'package:vexgo_app/data/datasources/remote/ticket_remote_data_source.dart';
 import 'package:vexgo_app/data/datasources/remote/trip_remote_data_source.dart';
 import 'package:vexgo_app/data/models/booking_model.dart';
@@ -43,7 +46,27 @@ class FailingReviewRemoteDataSource implements ReviewRemoteDataSource {
   }
 }
 
+class QueuedRefundBookingRepository extends MockBookingRepository {
+  @override
+  Future<Map<String, dynamic>> cancelTicket({
+    required String ticketCode,
+    required String phoneNumber,
+    String? reason,
+    required double expectedCancelFeeRate,
+  }) async {
+    return {'success': true, 'message': 'Tiếp nhận yêu cầu hủy vé'};
+  }
+}
+
 class FakeSeatRepoForBloc implements SeatRepository {
+  final bool shouldFailHold;
+  final String holdToken;
+
+  FakeSeatRepoForBloc({
+    this.shouldFailHold = false,
+    this.holdToken = 'test_hold_token_123',
+  });
+
   @override
   Future<List<SeatModel>> getTripSeats(dynamic tripId) async {
     return [
@@ -74,7 +97,15 @@ class FakeSeatRepoForBloc implements SeatRepository {
     required List<int> seatIds,
     int holdDurationSeconds = 600,
   }) async {
-    throw UnsupportedError('Real backend has no seat hold API');
+    if (shouldFailHold) {
+      throw Exception('Ghế đang được giữ bởi người khác');
+    }
+    return SeatHoldModel(
+      holdToken: holdToken,
+      tripId: tripId,
+      seatIds: seatIds,
+      expiresAt: DateTime.now().add(Duration(seconds: holdDurationSeconds)),
+    );
   }
 
   @override
@@ -351,6 +382,15 @@ void main() {
         expect(user.email, equals('levanc@gmail.com'));
         expect(user.ngaySinh, equals('1995-05-20'));
         expect(user.cccd, equals('079195000123'));
+        expect(user.maKhachHang, equals(''));
+        expect(user.daXacThucSoDienThoai, isFalse);
+        expect(user.hangThanhVien, equals(''));
+
+        final userWithCustId = UserModel.fromJson({'customerId': 77});
+        expect(
+          userWithCustId.maKhachHang,
+          equals(''),
+        ); // Must not fabricate KH77
       },
     );
 
@@ -407,27 +447,47 @@ void main() {
     );
 
     // -------------------------------------------------------------------------
-    // Finding H & I: RealSeatRepository throws UnsupportedError & BookingFlow bypasses 404
+    // Finding H & I: RealSeatRepository & BookingFlowBloc SeatHold integration
     // -------------------------------------------------------------------------
     test(
-      'Finding H: RealSeatRepository.createSeatHold throws UnsupportedError instead of hitting 404',
-      () {
-        final repo = RealSeatRepository();
-        expect(
-          () => repo.createSeatHold(tripId: 10, seatIds: [1, 2]),
-          throwsA(isA<UnsupportedError>()),
-        );
+      'Finding H: RealSeatRepository.createSeatHold calls SeatRemoteDataSource and parses holdToken',
+      () async {
+        final mockClient = MockClient((request) async {
+          expect(request.method, equals('POST'));
+          expect(request.url.path, endsWith('/seat-holds'));
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['tripId'], equals(10));
+          expect(body['seatIds'], equals([1, 2]));
+
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'holdToken': 'token_hold_12345',
+                'tripId': 10,
+                'seatIds': [1, 2],
+                'expiresAt': '2026-10-10T15:00:00.000Z',
+              },
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        });
+
+        final apiClient = ApiClient(httpClient: mockClient);
+        final remoteDs = SeatRemoteDataSourceImpl(client: apiClient);
+        final repo = RealSeatRepository(remoteDataSource: remoteDs);
+
+        final hold = await repo.createSeatHold(tripId: 10, seatIds: [1, 2]);
+        expect(hold.holdToken, equals('token_hold_12345'));
+        expect(hold.tripId, equals(10));
+        expect(hold.seatIds, equals([1, 2]));
       },
     );
 
     test(
-      'Finding I: BookingFlowBloc in Real Mode proceeds past seatSelection without calling 404 seat-holds',
+      'Finding I: BookingFlowBloc stores holdToken on success and blocks navigation on hold failure',
       () async {
-        final bloc = BookingFlowBloc(
-          seatRepository: FakeSeatRepoForBloc(),
-          bookingRepository: MockBookingRepository(),
-        );
-
         const testTrip = TripModel(
           id: '101',
           operatorId: '1',
@@ -453,13 +513,6 @@ void main() {
           reviewCount: 120,
         );
 
-        bloc.add(
-          InitBookingFlowEvent(trip: testTrip, date: DateTime(2026, 10, 10)),
-        );
-        await bloc.stream.firstWhere(
-          (s) => s.status == BookingFlowStatus.loaded,
-        );
-
         const seatA1 = SeatModel(
           id: '101',
           name: 'A01',
@@ -470,40 +523,151 @@ void main() {
           col: 1,
         );
 
-        bloc.add(const ToggleSeatEvent(seatA1));
-        await bloc.stream.firstWhere((s) => s.selectedSeats.isNotEmpty);
+        // Test failure case: should NOT advance to pickupPoint
+        final failingBloc = BookingFlowBloc(
+          seatRepository: FakeSeatRepoForBloc(shouldFailHold: true),
+          bookingRepository: MockBookingRepository(),
+        );
 
-        // In Real Mode, NextStepEvent should proceed directly to pickupPoint step
-        bloc.add(const NextStepEvent());
+        failingBloc.add(
+          InitBookingFlowEvent(trip: testTrip, date: DateTime(2026, 10, 10)),
+        );
+        await failingBloc.stream.firstWhere(
+          (s) => s.status == BookingFlowStatus.loaded,
+        );
+
+        failingBloc.add(const ToggleSeatEvent(seatA1));
+        await failingBloc.stream.firstWhere((s) => s.selectedSeats.isNotEmpty);
+
+        failingBloc.add(const NextStepEvent());
 
         await expectLater(
-          bloc.stream,
+          failingBloc.stream,
           emitsThrough(
             predicate<BookingFlowState>(
-              (s) => s.step == BookingStep.pickupPoint,
+              (s) =>
+                  s.step == BookingStep.seatSelection &&
+                  s.errorMessage != null &&
+                  s.holdToken == null,
             ),
           ),
         );
+        await failingBloc.close();
 
-        await bloc.close();
+        // Test success case: advances to pickupPoint and saves holdToken
+        final successBloc = BookingFlowBloc(
+          seatRepository: FakeSeatRepoForBloc(
+            shouldFailHold: false,
+            holdToken: 'authorized_token_xyz',
+          ),
+          bookingRepository: MockBookingRepository(),
+        );
+
+        successBloc.add(
+          InitBookingFlowEvent(trip: testTrip, date: DateTime(2026, 10, 10)),
+        );
+        await successBloc.stream.firstWhere(
+          (s) => s.status == BookingFlowStatus.loaded,
+        );
+
+        successBloc.add(const ToggleSeatEvent(seatA1));
+        await successBloc.stream.firstWhere((s) => s.selectedSeats.isNotEmpty);
+
+        successBloc.add(const NextStepEvent());
+
+        await expectLater(
+          successBloc.stream,
+          emitsThrough(
+            predicate<BookingFlowState>(
+              (s) =>
+                  s.step == BookingStep.pickupPoint &&
+                  s.holdToken == 'authorized_token_xyz',
+            ),
+          ),
+        );
+        await successBloc.close();
+      },
+    );
+
+    test(
+      'Finding I2: SeatRemoteDataSource.releaseSeatHold sends token in x-hold-token and ApiClient sanitizes log',
+      () async {
+        String? capturedHeaderToken;
+        String? capturedPath;
+
+        final mockClient = MockClient((request) async {
+          capturedHeaderToken = request.headers['x-hold-token'];
+          capturedPath = request.url.path;
+          return http.Response(
+            jsonEncode({'success': true, 'message': 'Released'}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        });
+
+        final apiClient = ApiClient(httpClient: mockClient);
+        final remoteDs = SeatRemoteDataSourceImpl(client: apiClient);
+
+        final result = await remoteDs.releaseSeatHold('secret_hold_token_999');
+        expect(result, isTrue);
+        expect(capturedHeaderToken, equals('secret_hold_token_999'));
+        expect(capturedPath, equals('/api/v1/seat-holds'));
+
+        // Verify URL sanitizer masks tokens
+        final sensitiveUri = Uri.parse(
+          'https://api.vexgo.vn/api/v1/seat-holds/secret_hold_token_999?token=my_secret_token',
+        );
+        final sanitized = ApiClient.sanitizeUriForLog(sensitiveUri);
+        expect(sanitized, isNot(contains('secret_hold_token_999')));
+        expect(sanitized, contains('REDACTED'));
       },
     );
 
     // -------------------------------------------------------------------------
-    // Finding J: RealNotificationRepository & HybridNotificationRepository in Real Mode
+    // Finding J: RealNotificationRepository & HybridNotificationRepository call remote in Real Mode
     // -------------------------------------------------------------------------
     test(
-      'Finding J: RealNotificationRepository & HybridNotificationRepository return empty in Real Mode',
+      'Finding J: RealNotificationRepository & HybridNotificationRepository call NotificationRemoteDataSource',
       () async {
         ApiConfig.isDemoMode = false;
+        await TokenStorage.saveTokens(accessToken: 'mock_jwt_token');
 
-        final realRepo = RealNotificationRepository();
-        final notifications = await realRepo.getNotifications();
-        expect(notifications, isEmpty);
+        final mockClient = MockClient((request) async {
+          expect(request.method, equals('GET'));
+          expect(request.url.path, endsWith('/notifications'));
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': [
+                {
+                  'id': 'notif_1',
+                  'title': 'Vé mới đặt',
+                  'message': 'Đặt vé thành công',
+                  'type': 'BOOKING_SUCCESS',
+                  'createdAt': '2026-10-10T10:00:00Z',
+                  'isRead': false,
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        });
 
-        final hybridRepo = HybridNotificationRepository();
+        final apiClient = ApiClient(httpClient: mockClient);
+        final remoteDs = NotificationRemoteDataSourceImpl(client: apiClient);
+
+        final realRepo = RealNotificationRepository(remoteDataSource: remoteDs);
+        final realList = await realRepo.getNotifications();
+        expect(realList.length, equals(1));
+        expect(realList.first.id, equals('notif_1'));
+
+        final hybridRepo = HybridNotificationRepository(
+          remoteDataSource: remoteDs,
+        );
         final hybridList = await hybridRepo.getNotifications();
-        expect(hybridList, isEmpty);
+        expect(hybridList.length, equals(1));
+        expect(hybridList.first.id, equals('notif_1'));
       },
     );
 
@@ -672,6 +836,166 @@ void main() {
         expect(route.toCityName, equals('Đà Lạt'));
         expect(route.duration, equals('6.5 giờ'));
         expect(route.minPrice, isNull);
+      },
+    );
+
+    // -------------------------------------------------------------------------
+    // Finding O & S: PaymentPendingException preserves bookingId, paymentUrl, and deeplink
+    // -------------------------------------------------------------------------
+    test(
+      'Finding O & S: PaymentPendingException preserves bookingId, paymentUrl and deeplink',
+      () {
+        const exception = PaymentPendingException(
+          message: 'Chờ thanh toán',
+          paymentId: 100,
+          bookingId: 200,
+          paymentUrl: 'https://vnpay.vn/pay?id=100',
+          deeplink: 'vnpay://pay?id=100',
+        );
+
+        expect(exception.bookingId, equals(200));
+        expect(exception.paymentId, equals(100));
+        expect(exception.paymentUrl, equals('https://vnpay.vn/pay?id=100'));
+        expect(exception.deeplink, equals('vnpay://pay?id=100'));
+      },
+    );
+
+    // -------------------------------------------------------------------------
+    // Finding Q: Review submission authoritatively resolves tripId or fails gracefully
+    // -------------------------------------------------------------------------
+    test(
+      'Finding Q: MyTicketsBloc review fails without valid tripId and never defaults to 1',
+      () async {
+        ApiConfig.isDemoMode = false;
+
+        final bloc = MyTicketsBloc(
+          bookingRepository: MockBookingRepository(),
+          reviewRemoteDataSource: FailingReviewRemoteDataSource(),
+        );
+
+        final ticketWithoutNumericTrip = TicketModel(
+          id: 'TKT_NO_TRIP',
+          ticketCode: 'VXG-NO-TRIP',
+          status: TicketStatus.completed,
+          bookingDate: '10/10/2026',
+          trip: const TicketTripSummary(
+            id: '', // Empty non-numeric trip id
+            operatorName: 'Nhà xe ABC',
+            vehicleType: 'Limousine',
+            departureTime: '10:00',
+            departureDate: '10/10/2026',
+            arrivalTime: '16:00',
+            arrivalDate: '10/10/2026',
+            fromCity: 'TP. Hồ Chí Minh',
+            toCity: 'Đà Lạt',
+            pickupPoint: 'BX Miền Đông',
+            pickupAddress: 'Bình Thạnh',
+            dropoffPoint: 'BX Đà Lạt',
+            dropoffAddress: 'Tô Hiến Thành',
+          ),
+          seats: const ['A01'],
+          totalAmount: 250000,
+          discountAmount: 0,
+          finalAmount: 250000,
+          paymentMethod: 'MoMo',
+          passenger: const PassengerInfo(
+            fullName: 'Nguyễn Văn A',
+            phone: '0901234567',
+            email: 'a@example.com',
+          ),
+        );
+
+        bloc.add(AddNewTicketEvent(ticketWithoutNumericTrip));
+
+        bloc.add(
+          const SubmitTicketReviewEvent(
+            ticketId: 'TKT_NO_TRIP',
+            review: ReviewModel(
+              rating: 5,
+              comment: 'Tốt',
+              createdAt: '10/10/2026',
+            ),
+          ),
+        );
+
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<MyTicketsState>((state) {
+              return state.errorMessage != null &&
+                  state.errorMessage!.contains(
+                    'Không thể xác định mã chuyến đi',
+                  );
+            }),
+          ),
+        );
+
+        await bloc.close();
+      },
+    );
+
+    // -------------------------------------------------------------------------
+    // Finding R: Cancel ticket with absent refundAmount indicates queued status
+    // -------------------------------------------------------------------------
+    test(
+      'Finding R: MyTicketsBloc cancelTicket with absent refundAmount reports queued processing message',
+      () async {
+        final sampleTicket = TicketModel(
+          id: 'TKT_CANCEL_TEST',
+          ticketCode: 'VXG-CAN-01',
+          status: TicketStatus.upcoming,
+          bookingDate: '10/10/2026 10:00',
+          trip: const TicketTripSummary(
+            id: '50',
+            operatorName: 'Nhà xe ABC',
+            vehicleType: 'Limousine',
+            departureTime: '23:00',
+            departureDate: '20/10/2030', // far in future so canCancel is true
+            arrivalTime: '05:00',
+            arrivalDate: '21/10/2030',
+            fromCity: 'TP. Hồ Chí Minh',
+            toCity: 'Đà Lạt',
+            pickupPoint: 'BX Miền Đông',
+            pickupAddress: 'Bình Thạnh',
+            dropoffPoint: 'BX Đà Lạt',
+            dropoffAddress: 'Tô Hiến Thành',
+          ),
+          seats: const ['A01'],
+          totalAmount: 250000,
+          discountAmount: 0,
+          finalAmount: 250000,
+          paymentMethod: 'MoMo',
+          passenger: const PassengerInfo(
+            fullName: 'Nguyễn Văn A',
+            phone: '0901234567',
+            email: 'a@example.com',
+          ),
+        );
+
+        final queuedRepo = QueuedRefundBookingRepository();
+        final bloc = MyTicketsBloc(bookingRepository: queuedRepo);
+
+        bloc.add(AddNewTicketEvent(sampleTicket));
+
+        bloc.add(
+          const CancelTicketEvent(
+            ticketId: 'TKT_CANCEL_TEST',
+            reason: 'Bận việc',
+            refundAmount: 200000,
+          ),
+        );
+
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<MyTicketsState>((state) {
+              return state.successMessage != null &&
+                  state.successMessage!.contains('đang chờ xử lý hoàn tiền');
+            }),
+          ),
+        );
+
+        await bloc.close();
       },
     );
   });

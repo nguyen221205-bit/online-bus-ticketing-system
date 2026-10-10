@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:vexgo_app/core/constants/app_colors.dart';
 import 'package:vexgo_app/core/constants/app_dimensions.dart';
 import 'package:vexgo_app/core/constants/app_text_styles.dart';
@@ -20,6 +21,121 @@ class Step6Payment extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Pending Payment Notification Card
+          if (state.pendingPaymentId != null ||
+              state.status == BookingFlowStatus.paymentPending) ...[
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.base),
+              decoration: BoxDecoration(
+                color: AppColors.infoLight.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                border: Border.all(color: AppColors.info),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.hourglass_top_rounded,
+                        color: AppColors.info,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Giao dịch thanh toán đang chờ xử lý',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.neutral800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Mã giao dịch: #${state.pendingPaymentId}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.neutral600,
+                    ),
+                  ),
+                  if (state.pendingPaymentUrl != null &&
+                      state.pendingPaymentUrl!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () {
+                        Clipboard.setData(
+                          ClipboardData(text: state.pendingPaymentUrl!),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Đã sao chép đường dẫn cổng thanh toán vào bộ nhớ tạm!',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.neutral300),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.link,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                state.pendingPaymentUrl!,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.primary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.copy,
+                              size: 16,
+                              color: AppColors.neutral500,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        bloc.add(const ConfirmPaymentEvent());
+                      },
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Kiểm tra kết quả thanh toán'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppDimensions.base),
+          ],
+
           // Countdown Timer Card
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

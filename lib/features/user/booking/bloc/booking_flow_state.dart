@@ -160,6 +160,7 @@ class BookingFlowState extends Equatable {
   }
 
   bool get isSeatsValid => selectedSeats.isNotEmpty && hasValidSeatPricing;
+  String? get holdToken => seatHold?.holdToken;
   bool get isPickupValid => selectedPickupPoint != null;
   bool get isDropoffValid => selectedDropoffPoint != null;
   bool get isPassengerValid =>

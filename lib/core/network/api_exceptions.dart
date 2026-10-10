@@ -59,6 +59,7 @@ class PaymentFailedException implements Exception {
 class PaymentPendingException implements Exception {
   final String message;
   final int paymentId;
+  final int? bookingId;
   final String? paymentUrl;
   final String? qrCodeUrl;
   final String? deeplink;
@@ -66,6 +67,7 @@ class PaymentPendingException implements Exception {
   const PaymentPendingException({
     this.message = 'Giao dịch thanh toán đang được xử lý hoặc chưa hoàn tất.',
     required this.paymentId,
+    this.bookingId,
     this.paymentUrl,
     this.qrCodeUrl,
     this.deeplink,
@@ -73,5 +75,5 @@ class PaymentPendingException implements Exception {
 
   @override
   String toString() =>
-      'PaymentPendingException: $message (paymentId: $paymentId)';
+      'PaymentPendingException: $message (paymentId: $paymentId, bookingId: $bookingId)';
 }

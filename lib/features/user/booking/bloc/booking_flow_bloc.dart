@@ -4,6 +4,7 @@ import 'package:vexgo_app/core/network/api_exceptions.dart';
 import 'package:vexgo_app/data/models/seat_model.dart';
 import 'package:vexgo_app/data/models/stop_point_model.dart';
 import 'package:vexgo_app/data/models/ticket_model.dart';
+import 'package:vexgo_app/data/models/trip_model.dart';
 import 'package:vexgo_app/data/repositories/booking_repository.dart';
 import 'package:vexgo_app/data/repositories/seat_repository.dart';
 import 'booking_flow_event.dart';
@@ -313,17 +314,6 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         );
         _startCountdown();
         return;
-      } on UnsupportedError {
-        // Backend at HEAD f2edf7f has no seat hold API.
-        // Per Finding I: In real mode, proceed directly to pickupPoint without server hold.
-        emit(
-          state.copyWith(
-            status: BookingFlowStatus.loaded,
-            step: BookingStep.pickupPoint,
-            errorMessage: null,
-          ),
-        );
-        return;
       } on ApiException catch (e) {
         emit(
           state.copyWith(
@@ -429,9 +419,17 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         );
         if (paymentStatus.isSuccess) {
           _stopCountdown();
+          final resolvedTicket =
+              state.createdTicket ??
+              await _resolveAuthoritativeTicket(
+                trip,
+                state,
+                state.pendingBookingId,
+              );
           emit(
             state.copyWith(
               status: BookingFlowStatus.success,
+              createdTicket: resolvedTicket,
               clearPendingPayment: true,
             ),
           );
@@ -560,10 +558,11 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
       emit(
         state.copyWith(
           status: BookingFlowStatus.paymentPending,
+          pendingBookingId: e.bookingId ?? state.pendingBookingId,
           pendingPaymentId: e.paymentId,
-          pendingPaymentUrl: e.paymentUrl,
-          pendingQrCodeUrl: e.qrCodeUrl,
-          pendingDeeplink: e.deeplink,
+          pendingPaymentUrl: e.paymentUrl ?? state.pendingPaymentUrl,
+          pendingQrCodeUrl: e.qrCodeUrl ?? state.pendingQrCodeUrl,
+          pendingDeeplink: e.deeplink ?? state.pendingDeeplink,
           errorMessage: e.message,
         ),
       );
@@ -589,6 +588,107 @@ class BookingFlowBloc extends Bloc<BookingFlowEvent, BookingFlowState> {
         ),
       );
     }
+  }
+
+  TicketTripSummary _buildTripSummary(TripModel trip, BookingFlowState state) {
+    final date = state.date ?? DateTime.now();
+    final dateFormatted =
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+    return TicketTripSummary(
+      id: trip.id,
+      operatorName: trip.operatorName,
+      vehicleType: trip.vehicleType,
+      departureTime: state.selectedPickupPoint?.time ?? trip.departureTime,
+      departureDate: dateFormatted,
+      arrivalTime: state.selectedDropoffPoint?.time ?? trip.arrivalTime,
+      arrivalDate: dateFormatted,
+      fromCity: trip.fromCityName,
+      toCity: trip.toCityName,
+      pickupPoint: state.selectedPickupPoint?.name ?? trip.pickupPoint,
+      pickupAddress: state.selectedPickupPoint?.address ?? trip.pickupAddress,
+      dropoffPoint: state.selectedDropoffPoint?.name ?? trip.dropoffPoint,
+      dropoffAddress:
+          state.selectedDropoffPoint?.address ?? trip.dropoffAddress,
+    );
+  }
+
+  Future<TicketModel> _resolveAuthoritativeTicket(
+    TripModel trip,
+    BookingFlowState state,
+    int? bookingId,
+  ) async {
+    final summary = _buildTripSummary(trip, state);
+    final seatNames = state.selectedSeats.map((s) => s.name).toList();
+    final passenger = PassengerInfo(
+      fullName: state.passengerName.trim(),
+      phone: state.passengerPhone.trim(),
+      email: state.passengerEmail.trim(),
+    );
+
+    if (bookingId != null && bookingId > 0) {
+      try {
+        final booking = await bookingRepository.getBookingById(
+          bookingId.toString(),
+        );
+        if (booking != null) {
+          if (booking.tickets.isNotEmpty) {
+            return booking.tickets.first;
+          }
+          final now = DateTime.now();
+          final bookingDateStr =
+              '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+          return TicketModel(
+            id: 'TKT_${booking.bookingCode}',
+            ticketCode: booking.bookingCode,
+            bookingId: booking.bookingId,
+            bookingCode: booking.bookingCode,
+            status: TicketStatus.upcoming,
+            bookingDate: bookingDateStr,
+            trip: summary,
+            seats: booking.seats.isNotEmpty ? booking.seats : seatNames,
+            totalAmount: booking.totalAmount,
+            discountAmount: booking.discountAmount,
+            finalAmount: booking.totalAmount,
+            paymentMethod: state.selectedPaymentMethod,
+            passenger: passenger,
+          );
+        }
+      } catch (_) {}
+
+      try {
+        final myTickets = await bookingRepository.getMyTickets();
+        final found = myTickets
+            .where((t) => t.bookingId == bookingId)
+            .firstOrNull;
+        if (found != null) {
+          return found;
+        }
+      } catch (_) {}
+    }
+
+    final now = DateTime.now();
+    final bookingDateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final code = bookingId != null
+        ? 'VXG-$bookingId'
+        : 'VXG-${now.millisecondsSinceEpoch}';
+
+    return TicketModel(
+      id: 'TKT_$code',
+      ticketCode: code,
+      bookingId: bookingId,
+      bookingCode: code,
+      status: TicketStatus.upcoming,
+      bookingDate: bookingDateStr,
+      trip: summary,
+      seats: seatNames,
+      totalAmount: state.seatsTotalAmount ?? (state.finalAmount ?? 0),
+      discountAmount: state.discountAmount,
+      finalAmount: state.finalAmount ?? 0,
+      paymentMethod: state.selectedPaymentMethod,
+      passenger: passenger,
+    );
   }
 
   void _startCountdown() {

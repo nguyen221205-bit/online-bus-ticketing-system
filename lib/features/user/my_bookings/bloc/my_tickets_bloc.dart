@@ -136,24 +136,26 @@ class MyTicketsBloc extends Bloc<MyTicketsEvent, MyTicketsState> {
           ? cancelResult['data'] as Map<String, dynamic>
           : cancelResult;
 
-      final refund =
-          (payload['refundAmount'] as num?)?.toInt() ?? event.refundAmount;
+      final serverRefund = (payload['refundAmount'] as num?)?.toInt();
 
       final updatedTicket = ticket.copyWith(
         status: TicketStatus.cancelled,
         cancelReason: event.reason,
-        refundAmount: refund,
+        refundAmount: serverRefund,
       );
 
       final updatedList = List<TicketModel>.from(state.tickets);
       updatedList[ticketIndex] = updatedTicket;
 
+      final successMessage = serverRefund != null
+          ? 'Hủy vé ${ticket.ticketCode} thành công! Số tiền hoàn lại: $serverRefund đ.'
+          : 'Yêu cầu hủy vé ${ticket.ticketCode} đã được tiếp nhận và đang chờ xử lý hoàn tiền.';
+
       emit(
         state.copyWith(
           tickets: updatedList,
           selectedTab: TicketStatus.cancelled,
-          successMessage:
-              'Hủy vé ${ticket.ticketCode} thành công! Số tiền hoàn lại: $refund đ.',
+          successMessage: successMessage,
         ),
       );
     } catch (e) {
@@ -195,12 +197,27 @@ class MyTicketsBloc extends Bloc<MyTicketsEvent, MyTicketsState> {
       return;
     }
 
-    // Try submitting review to backend API if numeric tripId can be parsed
-    final rawTripId = ticket.trip.id;
-    final tripId =
-        int.tryParse(rawTripId) ??
-        int.tryParse(rawTripId.replaceAll(RegExp(r'\D'), '')) ??
-        1;
+    // Resolve tripId authoritatively: check ticket.trip.id, or query booking
+    int? tripId;
+    final parsedTripId = int.tryParse(ticket.trip.id);
+    if (parsedTripId != null && parsedTripId > 0) {
+      tripId = parsedTripId;
+    } else if (ticket.bookingId != null) {
+      final booking = await bookingRepository.getBookingById(ticket.bookingId);
+      if (booking != null && booking.tripId > 0) {
+        tripId = booking.tripId;
+      }
+    }
+
+    if (tripId == null || tripId <= 0) {
+      emit(
+        state.copyWith(
+          errorMessage:
+              'Không thể xác định mã chuyến đi hợp lệ để gửi đánh giá.',
+        ),
+      );
+      return;
+    }
 
     try {
       await reviewRemoteDataSource.createReview(

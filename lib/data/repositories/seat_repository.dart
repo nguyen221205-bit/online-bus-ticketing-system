@@ -158,13 +158,14 @@ class RealSeatRepository implements SeatRepository {
     required int tripId,
     required List<int> seatIds,
   }) async {
-    throw UnsupportedError(
-      'Chức năng giữ ghế trực tuyến (seat hold) chưa được hỗ trợ bởi máy chủ ở phiên bản hiện tại.',
+    return await remoteDataSource.createSeatHold(
+      tripId: tripId,
+      seatIds: seatIds,
     );
   }
 
   @override
   Future<bool> releaseSeatHold(String holdToken) async {
-    return true;
+    return await remoteDataSource.releaseSeatHold(holdToken);
   }
 }

@@ -3,6 +3,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
 
 abstract class NotificationRemoteDataSource {
+  Future<List<NotificationModel>> getNotifications();
   Future<List<NotificationModel>> getMyNotifications({
     bool unreadOnly = false,
     int page = 1,
@@ -17,6 +18,9 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   final ApiClient client;
 
   NotificationRemoteDataSourceImpl({required this.client});
+
+  @override
+  Future<List<NotificationModel>> getNotifications() => getMyNotifications();
 
   @override
   Future<List<NotificationModel>> getMyNotifications({

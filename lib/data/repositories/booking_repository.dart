@@ -75,12 +75,17 @@ abstract class BookingRepository {
     required String ticketCode,
     required String phoneNumber,
   });
+
+  Future<BookingModel?> getBookingById(dynamic bookingId);
 }
 
 class MockBookingRepository implements BookingRepository {
   List<VoucherModel>? _cachedVouchers;
   List<TicketModel>? _cachedTickets;
   List<NotificationModel>? _cachedNotifications;
+
+  @override
+  Future<BookingModel?> getBookingById(dynamic bookingId) async => null;
 
   @override
   Future<List<VoucherModel>> getVouchers() async {
@@ -474,9 +479,10 @@ class HybridBookingRepository implements BookingRepository {
         throw PaymentPendingException(
           message: 'Giao dịch thanh toán đang được xử lý hoặc chưa hoàn tất.',
           paymentId: resolvedPaymentId,
-          paymentUrl: paymentStatus.paymentUrl,
-          qrCodeUrl: paymentStatus.qrCodeUrl,
-          deeplink: paymentStatus.deeplink,
+          bookingId: booking.bookingId,
+          paymentUrl: payment.paymentUrl ?? paymentStatus.paymentUrl,
+          qrCodeUrl: payment.qrCodeUrl ?? paymentStatus.qrCodeUrl,
+          deeplink: payment.deeplink ?? paymentStatus.deeplink,
         );
       }
 
@@ -502,6 +508,8 @@ class HybridBookingRepository implements BookingRepository {
       final newTicket = TicketModel(
         id: 'TKT_${booking.bookingCode}',
         ticketCode: booking.bookingCode,
+        bookingId: booking.bookingId,
+        bookingCode: booking.bookingCode,
         status: TicketStatus.upcoming,
         bookingDate: bookingDateStr,
         trip: trip,
@@ -714,6 +722,20 @@ class HybridBookingRepository implements BookingRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<BookingModel?> getBookingById(dynamic bookingId) async {
+    try {
+      return await remoteBookingDataSource.getBookingById(bookingId);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HybridBookingRepository] Remote getBookingById failed: $e',
+        );
+      }
+      return null;
+    }
+  }
 }
 
 /// Real booking repository: pure remote backend calls, no mock fallbacks
@@ -820,9 +842,10 @@ class RealBookingRepository implements BookingRepository {
       throw PaymentPendingException(
         message: 'Giao dịch thanh toán đang được xử lý hoặc chưa hoàn tất.',
         paymentId: resolvedPaymentId,
-        paymentUrl: paymentStatus.paymentUrl,
-        qrCodeUrl: paymentStatus.qrCodeUrl,
-        deeplink: paymentStatus.deeplink,
+        bookingId: booking.bookingId,
+        paymentUrl: payment.paymentUrl ?? paymentStatus.paymentUrl,
+        qrCodeUrl: payment.qrCodeUrl ?? paymentStatus.qrCodeUrl,
+        deeplink: payment.deeplink ?? paymentStatus.deeplink,
       );
     }
 
@@ -847,6 +870,8 @@ class RealBookingRepository implements BookingRepository {
     return TicketModel(
       id: 'TKT_${booking.bookingCode}',
       ticketCode: booking.bookingCode,
+      bookingId: booking.bookingId,
+      bookingCode: booking.bookingCode,
       status: TicketStatus.upcoming,
       bookingDate: bookingDateStr,
       trip: trip,
@@ -956,5 +981,14 @@ class RealBookingRepository implements BookingRepository {
       ticketCode: ticketCode,
       phoneNumber: phoneNumber,
     );
+  }
+
+  @override
+  Future<BookingModel?> getBookingById(dynamic bookingId) async {
+    try {
+      return await remoteBookingDataSource.getBookingById(bookingId);
+    } catch (_) {
+      return null;
+    }
   }
 }

@@ -46,7 +46,11 @@ class SeatRemoteDataSourceImpl implements SeatRemoteDataSource {
   @override
   Future<bool> releaseSeatHold(String holdToken) async {
     try {
-      await client.delete(ApiConfig.seatHoldRelease(holdToken));
+      await client.delete(
+        ApiConfig.seatHolds,
+        headers: {'x-hold-token': holdToken},
+        body: {'holdToken': holdToken},
+      );
       return true;
     } catch (_) {
       return false;
